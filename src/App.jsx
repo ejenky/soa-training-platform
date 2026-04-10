@@ -19,6 +19,8 @@ import Profile from './pages/Profile'
 import Certification from './pages/Certification'
 import ContentManager from './pages/ContentManager'
 import SupervisorSettings from './pages/SupervisorSettings'
+import Scenarios from './pages/Scenarios'
+import ScenarioPlayer from './pages/ScenarioPlayer'
 import History from './pages/History'
 import SessionReplay from './pages/SessionReplay'
 
@@ -55,6 +57,8 @@ function AnimatedRoutes() {
           <Route path="/lessons/:id" element={<PageFade><LessonDetail /></PageFade>} />
           <Route path="/practice" element={<PageFade><Practice /></PageFade>} />
           <Route path="/practice/session" element={<PageFade><PracticeSession /></PageFade>} />
+          <Route path="/practice/scenario/:id" element={<PageFade><ScenarioPlayer /></PageFade>} />
+          <Route path="/scenarios" element={<PageFade><Scenarios /></PageFade>} />
           <Route path="/progress" element={<PageFade><Progress /></PageFade>} />
           <Route path="/profile" element={<PageFade><Profile /></PageFade>} />
           <Route path="/certification" element={<PageFade><Certification /></PageFade>} />

@@ -77,7 +77,7 @@ export default function Layout() {
   const [flagCount, setFlagCount] = useState(0)
 
   // Hide sidebar on practice/session for immersive view
-  const immersive = location.pathname.startsWith('/practice/session')
+  const immersive = location.pathname.startsWith('/practice/session') || location.pathname.startsWith('/practice/scenario/')
 
   useEffect(() => {
     let cancelled = false

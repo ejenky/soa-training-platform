@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { motion } from 'motion/react'
 import {
   Target,
@@ -13,6 +13,8 @@ import {
   Flame,
   HeartStraight,
   ArrowRight,
+  Phone,
+  Timer,
 } from '@phosphor-icons/react'
 import { useAuth } from '../contexts/AuthContext'
 import { pb } from '../lib/pb'
@@ -49,6 +51,7 @@ export default function Practice() {
   const [selectedCat, setSelectedCat] = useState(null)
   const [loading, setLoading] = useState(true)
   const [dueCount, setDueCount] = useState(0)
+  const [scenarios, setScenarios] = useState([])
 
   useEffect(() => {
     let cancelled = false
@@ -69,11 +72,13 @@ export default function Practice() {
           }
         }
         const dueReviews = await fetchDueReviews(pb, user?.id)
+        const scs = await pb.collection('scenarios').getFullList({ filter: 'active = true', sort: 'difficulty,name' }).catch(() => [])
 
         if (cancelled) return
         setObjectionCounts(counts)
         setResponses(rs)
         setDueCount(dueReviews.length)
+        setScenarios(scs)
       } catch (e) {
         console.error(e)
       } finally {
@@ -158,6 +163,34 @@ export default function Practice() {
           )
         })}
       </div>
+
+      {/* Scenarios section */}
+      {scenarios.length > 0 && (
+        <motion.div
+          className="card"
+          style={{ marginTop: 20 }}
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.08 }}
+        >
+          <div className="row between">
+            <h2><Phone size={16} weight="regular" style={{ marginRight: 6 }} />Roleplay Scenarios</h2>
+            <Link to="/scenarios" style={{ fontSize: 12 }}>View all →</Link>
+          </div>
+          <div className="sc-compact-grid">
+            {scenarios.slice(0, 4).map((s) => (
+              <button key={s.id} className="sc-compact-card" onClick={() => navigate(`/practice/scenario/${s.id}`)}>
+                <div className="sc-compact-av">{s.persona_name?.[0]?.toUpperCase() || '?'}</div>
+                <div className="sc-compact-info">
+                  <div className="sc-compact-name">{s.persona_name}</div>
+                  <div className="sc-compact-meta">{s.category} · Diff {s.difficulty}</div>
+                </div>
+                <ArrowRight size={12} weight="bold" className="sc-compact-arrow" />
+              </button>
+            ))}
+          </div>
+        </motion.div>
+      )}
 
       <motion.div
         className="card"
