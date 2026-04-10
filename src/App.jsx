@@ -14,6 +14,7 @@ import Progress from './pages/Progress'
 import Supervisor from './pages/Supervisor'
 import SupervisorAgent from './pages/SupervisorAgent'
 import Register from './pages/Register'
+import SupervisorFlags from './pages/SupervisorFlags'
 import Profile from './pages/Profile'
 import History from './pages/History'
 import SessionReplay from './pages/SessionReplay'
@@ -60,6 +61,14 @@ function AnimatedRoutes() {
             element={
               <ProtectedRoute role="supervisor">
                 <PageFade><Supervisor /></PageFade>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/supervisor/flags"
+            element={
+              <ProtectedRoute role="supervisor">
+                <PageFade><SupervisorFlags /></PageFade>
               </ProtectedRoute>
             }
           />

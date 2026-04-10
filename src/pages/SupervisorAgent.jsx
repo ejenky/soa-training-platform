@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
-import { motion } from 'motion/react'
-import { ArrowLeft, ArrowRight, Warning } from '@phosphor-icons/react'
+import { motion, AnimatePresence } from 'motion/react'
+import { ArrowLeft, ArrowRight, Warning, X } from '@phosphor-icons/react'
 import { pb } from '../lib/pb'
 import {
   computeXP,
@@ -55,6 +55,8 @@ export default function SupervisorAgent() {
   const [statusSaving, setStatusSaving] = useState(false)
   const [statusMsg, setStatusMsg] = useState('')
   const [resetMsg, setResetMsg] = useState('')
+  const [showRemoveConfirm, setShowRemoveConfirm] = useState(false)
+  const [removing, setRemoving] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -140,6 +142,17 @@ export default function SupervisorAgent() {
       setTimeout(() => setResetMsg(''), 3000)
     } catch {
       setResetMsg('error')
+    }
+  }
+
+  async function handleRemoveAgent() {
+    setRemoving(true)
+    try {
+      await pb.collection('users').update(id, { status: 'suspended' })
+      setShowRemoveConfirm(false)
+      navigate('/supervisor')
+    } catch {
+      setRemoving(false)
     }
   }
 
@@ -388,8 +401,43 @@ export default function SupervisorAgent() {
             {resetMsg === 'sent' && <span className="inline-success">Reset email sent</span>}
             {resetMsg === 'error' && <span className="inline-error">Failed to send</span>}
           </div>
+          <div className="sa-action-group" style={{ marginLeft: 'auto' }}>
+            <button className="outline-red" onClick={() => setShowRemoveConfirm(true)}>Remove Agent</button>
+          </div>
         </div>
       </motion.div>
+
+      {/* Remove confirmation modal */}
+      <AnimatePresence>
+        {showRemoveConfirm && (
+          <motion.div className="modal-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowRemoveConfirm(false)}>
+            <motion.div
+              className="modal-card modal-sm"
+              initial={{ opacity: 0, y: 24, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 24, scale: 0.97 }}
+              transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="modal-header">
+                <h2>Remove Agent</h2>
+                <button className="modal-close" onClick={() => setShowRemoveConfirm(false)}><X size={16} /></button>
+              </div>
+              <div className="modal-body">
+                <p style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 16 }}>
+                  Are you sure you want to remove <strong>{agent.name || agent.email}</strong>? This will set their status to suspended. They will no longer be able to access the platform.
+                </p>
+                <div className="modal-actions">
+                  <button onClick={() => setShowRemoveConfirm(false)}>Cancel</button>
+                  <button className="outline-red" onClick={handleRemoveAgent} disabled={removing}>
+                    {removing ? 'Removing…' : 'Confirm Remove'}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
