@@ -1,8 +1,9 @@
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
-import { AuthProvider } from './contexts/AuthContext'
+import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import ProtectedRoute from './components/ProtectedRoute'
+import Landing from './pages/Landing'
 import Layout from './components/Layout'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
@@ -37,11 +38,18 @@ function PageFade({ children }) {
   )
 }
 
+function LandingOrDashboard() {
+  const { isAuthenticated } = useAuth()
+  if (isAuthenticated) return <Navigate to="/dashboard" replace />
+  return <Landing />
+}
+
 function AnimatedRoutes() {
   const location = useLocation()
   return (
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
+        <Route path="/" element={<LandingOrDashboard />} />
         <Route path="/login" element={<PageFade><Login /></PageFade>} />
         <Route path="/register" element={<PageFade><Register /></PageFade>} />
         <Route
@@ -51,7 +59,6 @@ function AnimatedRoutes() {
             </ProtectedRoute>
           }
         >
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<PageFade><Dashboard /></PageFade>} />
           <Route path="/lessons" element={<PageFade><Lessons /></PageFade>} />
           <Route path="/lessons/:id" element={<PageFade><LessonDetail /></PageFade>} />
