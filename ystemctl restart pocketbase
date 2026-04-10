@@ -1,0 +1,17 @@
+[0;1;32m●[0m pocketbase.service - PocketBase
+     Loaded: loaded (]8;;file://ubuntu-s-1vcpu-2gb-nyc3-01/etc/systemd/system/pocketbase.service/etc/systemd/system/pocketbase.service]8;;; [0;1;32menabled[0m; preset: [0;1;32menabled[0m)
+     Active: [0;1;32mactive (running)[0m since Wed 2026-04-08 21:45:39 UTC; 1 day 18h ago
+   Main PID: 552744 (pocketbase)
+      Tasks: 9 (limit: 4653)
+     Memory: 20.3M (peak: 23.8M)
+        CPU: 20.777s
+     CGroup: /system.slice/pocketbase.service
+             └─[0;38;5;245m552744 /opt/pocketbase/pocketbase serve --http=0.0.0.0:8090[0m
+
+Apr 08 21:45:39 ubuntu-s-1vcpu-2gb-nyc3-01 systemd[1]: Started pocketbase.service - PocketBase.
+Apr 08 21:45:39 ubuntu-s-1vcpu-2gb-nyc3-01 pocketbase[552744]: 2026/04/08 21:45:39 Server started at http://0.0.0.0:8090
+Apr 08 21:45:39 ubuntu-s-1vcpu-2gb-nyc3-01 pocketbase[552744]: ├─ REST API:  http://0.0.0.0:8090/api/
+Apr 08 21:45:39 ubuntu-s-1vcpu-2gb-nyc3-01 pocketbase[552744]: └─ Dashboard: http://0.0.0.0:8090/_/
+Apr 08 21:45:39 ubuntu-s-1vcpu-2gb-nyc3-01 pocketbase[552744]: (!) Launch the URL below in the browser if it hasn't been open already to create your first superuser account:
+Apr 08 21:45:39 ubuntu-s-1vcpu-2gb-nyc3-01 pocketbase[552744]: http://0.0.0.0:8090/_/#/pbinstal/eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjb2xsZWN0aW9uSWQiOiJwYmNfMzE0MjYzNTgyMyIsImV4cCI6MTc3NTY4NjUzOSwiaWQiOiJqOHhtcGRyMm40NnU1OTIiLCJyZWZyZXNoYWJsZSI6ZmFsc2UsInR5cGUiOiJhdXRoIn0.vNCNy_Wp1rx13L9oSp6E7EGicBb_4J2csTDxdkEuiok
+Apr 08 21:45:39 ubuntu-s-1vcpu-2gb-nyc3-01 pocketbase[552744]: (you can also create your first superuser by running: /opt/pocketbase/pocketbase superuser upsert EMAIL PASS)

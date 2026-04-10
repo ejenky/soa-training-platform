@@ -1593,6 +1593,27 @@ tbody tr:hover td { background: var(--row-hover); }
   font-size: 11px;
   color: var(--text-muted);
 }
+.login-card .footer-note a {
+  color: var(--green);
+  text-decoration: none;
+  font-weight: 600;
+}
+.login-card .footer-note a:hover {
+  text-decoration: underline;
+}
+.login-card .field-row {
+  display: flex;
+  gap: 12px;
+}
+.login-card .field-row .field {
+  flex: 1;
+}
+.login-card .field-error {
+  display: block;
+  font-size: 11px;
+  color: var(--error);
+  margin-top: 4px;
+}
 
 /* Scripts */
 .script {

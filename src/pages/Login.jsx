@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate, Navigate } from 'react-router-dom'
+import { useNavigate, Navigate, Link } from 'react-router-dom'
 import { motion } from 'motion/react'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -82,7 +82,9 @@ export default function Login() {
           </button>
         </form>
 
-        <div className="footer-note">Licensed Medicare Advantage agents only</div>
+        <div className="footer-note">
+          Don't have an account? <Link to="/register">Sign up</Link>
+        </div>
       </motion.div>
     </div>
   )

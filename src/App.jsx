@@ -13,6 +13,7 @@ import PracticeSession from './pages/PracticeSession'
 import Progress from './pages/Progress'
 import Supervisor from './pages/Supervisor'
 import SupervisorAgent from './pages/SupervisorAgent'
+import Register from './pages/Register'
 
 function PageFade({ children }) {
   return (
@@ -33,6 +34,7 @@ function AnimatedRoutes() {
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
         <Route path="/login" element={<PageFade><Login /></PageFade>} />
+        <Route path="/register" element={<PageFade><Register /></PageFade>} />
         <Route
           element={
             <ProtectedRoute>
