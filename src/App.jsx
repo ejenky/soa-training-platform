@@ -14,6 +14,7 @@ import Progress from './pages/Progress'
 import Supervisor from './pages/Supervisor'
 import SupervisorAgent from './pages/SupervisorAgent'
 import Register from './pages/Register'
+import Profile from './pages/Profile'
 
 function PageFade({ children }) {
   return (
@@ -49,6 +50,7 @@ function AnimatedRoutes() {
           <Route path="/practice" element={<PageFade><Practice /></PageFade>} />
           <Route path="/practice/session" element={<PageFade><PracticeSession /></PageFade>} />
           <Route path="/progress" element={<PageFade><Progress /></PageFade>} />
+          <Route path="/profile" element={<PageFade><Profile /></PageFade>} />
           <Route
             path="/supervisor"
             element={

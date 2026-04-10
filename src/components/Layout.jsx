@@ -13,6 +13,7 @@ import {
   SignOut,
   Sun,
   Moon,
+  UserCircle,
 } from '@phosphor-icons/react'
 import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'
@@ -35,6 +36,7 @@ const PAGE_TITLES = {
   '/supervisor': 'Team',
   '/supervisor/flags': 'Flags',
   '/supervisor/settings': 'Settings',
+  '/profile': 'Profile',
 }
 
 function pageTitleFor(pathname) {
@@ -211,8 +213,24 @@ export default function Layout() {
           </div>
         )}
 
+        <div className="sidebar-section sidebar-profile-section">
+          <nav className="sidebar-nav">
+            <NavLink
+              to="/profile"
+              end
+              onClick={() => setOpen(false)}
+              className={({ isActive }) => (isActive ? 'active' : '')}
+            >
+              <span className="nav-icon"><UserCircle size={16} weight="regular" /></span>
+              <span className="nav-label">Profile</span>
+            </NavLink>
+          </nav>
+        </div>
+
         <div className="sidebar-footer">
-          <div className="avatar">{initials(user?.name, user?.email)}</div>
+          <NavLink to="/profile" className="avatar-link" onClick={() => setOpen(false)}>
+            <div className="avatar">{initials(user?.name, user?.email)}</div>
+          </NavLink>
           <div className="who">
             <div className="name">{user?.name || user?.email || 'Agent'}</div>
             <div className="role">{role}</div>
