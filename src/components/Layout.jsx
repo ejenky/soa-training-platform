@@ -14,6 +14,7 @@ import {
   Sun,
   Moon,
   UserCircle,
+  ClockCounterClockwise,
 } from '@phosphor-icons/react'
 import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'
@@ -37,10 +38,12 @@ const PAGE_TITLES = {
   '/supervisor/flags': 'Flags',
   '/supervisor/settings': 'Settings',
   '/profile': 'Profile',
+  '/history': 'Session History',
 }
 
 function pageTitleFor(pathname) {
   if (pathname.startsWith('/lessons/')) return 'Lesson'
+  if (pathname.startsWith('/history/')) return 'Session Replay'
   if (pathname.startsWith('/supervisor/agent/')) return 'Agent Detail'
   return PAGE_TITLES[pathname] || 'HIA Sales Training'
 }
@@ -143,6 +146,7 @@ export default function Layout() {
     },
     { to: '/practice', label: 'Practice', Icon: Target, dot: hasPracticeToday },
     { to: '/progress', label: 'Progress', Icon: ChartLine },
+    { to: '/history', label: 'History', Icon: ClockCounterClockwise },
   ]
 
   const supervisorNav = [
