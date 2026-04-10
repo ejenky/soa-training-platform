@@ -34,7 +34,7 @@ const PAGE_TITLES = {
   '/lessons': 'Lessons',
   '/practice': 'Practice',
   '/progress': 'Progress',
-  '/supervisor': 'Team',
+  '/supervisor': 'Team Overview',
   '/supervisor/flags': 'Flags',
   '/supervisor/settings': 'Settings',
   '/profile': 'Profile',
