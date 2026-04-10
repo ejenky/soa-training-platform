@@ -15,6 +15,8 @@ import {
   Moon,
   UserCircle,
   ClockCounterClockwise,
+  Medal,
+  Notebook,
 } from '@phosphor-icons/react'
 import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'
@@ -39,6 +41,8 @@ const PAGE_TITLES = {
   '/supervisor/settings': 'Settings',
   '/profile': 'Profile',
   '/history': 'Session History',
+  '/certification': 'Certification',
+  '/supervisor/content': 'Content Manager',
 }
 
 function pageTitleFor(pathname) {
@@ -146,6 +150,7 @@ export default function Layout() {
     },
     { to: '/practice', label: 'Practice', Icon: Target, dot: hasPracticeToday },
     { to: '/progress', label: 'Progress', Icon: ChartLine },
+    { to: '/certification', label: 'Certification', Icon: Medal },
     { to: '/history', label: 'History', Icon: ClockCounterClockwise },
   ]
 
@@ -163,6 +168,7 @@ export default function Layout() {
       meta: flagCount > 0 ? String(flagCount) : null,
       metaClass: 'amber',
     },
+    { to: '/supervisor/content', label: 'Content', Icon: Notebook },
     { to: '/supervisor/settings', label: 'Settings', Icon: Gear },
   ]
 
@@ -306,7 +312,7 @@ export default function Layout() {
 
       {!immersive && (
         <nav className="bottom-tabs">
-          {agentNav.map((l) => (
+          {agentNav.slice(0, 5).map((l) => (
             <NavLink key={l.to} to={l.to} end className={({ isActive }) => (isActive ? 'active' : '')}>
               <l.Icon size={18} weight="regular" />
               <span>{l.label}</span>

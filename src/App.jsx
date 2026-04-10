@@ -16,6 +16,9 @@ import SupervisorAgent from './pages/SupervisorAgent'
 import Register from './pages/Register'
 import SupervisorFlags from './pages/SupervisorFlags'
 import Profile from './pages/Profile'
+import Certification from './pages/Certification'
+import ContentManager from './pages/ContentManager'
+import SupervisorSettings from './pages/SupervisorSettings'
 import History from './pages/History'
 import SessionReplay from './pages/SessionReplay'
 
@@ -54,6 +57,7 @@ function AnimatedRoutes() {
           <Route path="/practice/session" element={<PageFade><PracticeSession /></PageFade>} />
           <Route path="/progress" element={<PageFade><Progress /></PageFade>} />
           <Route path="/profile" element={<PageFade><Profile /></PageFade>} />
+          <Route path="/certification" element={<PageFade><Certification /></PageFade>} />
           <Route path="/history" element={<PageFade><History /></PageFade>} />
           <Route path="/history/:sessionId" element={<PageFade><SessionReplay /></PageFade>} />
           <Route
@@ -69,6 +73,22 @@ function AnimatedRoutes() {
             element={
               <ProtectedRoute role="supervisor">
                 <PageFade><SupervisorFlags /></PageFade>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/supervisor/settings"
+            element={
+              <ProtectedRoute role="supervisor">
+                <PageFade><SupervisorSettings /></PageFade>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/supervisor/content"
+            element={
+              <ProtectedRoute role="supervisor">
+                <PageFade><ContentManager /></PageFade>
               </ProtectedRoute>
             }
           />

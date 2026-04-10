@@ -89,24 +89,22 @@ export default function SupervisorFlags() {
       const lastActive = ps[0]?.created || cs[0]?.completed_at || null
 
       // Quiz flags
-      if (quizAvg >= 0 && quizAvg < 50) {
-        list.push({ agentId: a.id, agent: a, severity: 'red', reason: `Quiz average below 50% (currently ${quizAvg}%)`, metric: `quiz-${quizAvg}`, lastActive })
-      } else if (quizAvg >= 0 && quizAvg < 70) {
-        list.push({ agentId: a.id, agent: a, severity: 'amber', reason: `Quiz average below 70% (currently ${quizAvg}%)`, metric: `quiz-${quizAvg}`, lastActive })
+      if (quizAvg >= 0 && quizAvg < 70) {
+        list.push({ agentId: a.id, agent: a, severity: 'red', reason: `Quiz average below 70% (currently ${quizAvg}%)`, metric: `quiz-${quizAvg}`, lastActive })
+      } else if (quizAvg >= 0 && quizAvg < 85) {
+        list.push({ agentId: a.id, agent: a, severity: 'amber', reason: `Quiz average below 85% (currently ${quizAvg}%)`, metric: `quiz-${quizAvg}`, lastActive })
       }
 
       // GPA flags
-      if (gpa >= 0 && gpa < 1.0) {
-        list.push({ agentId: a.id, agent: a, severity: 'red', reason: `Practice GPA below 1.0 (currently ${gpa.toFixed(1)})`, metric: `gpa-${gpa.toFixed(1)}`, lastActive })
-      } else if (gpa >= 0 && gpa < 2.0) {
-        list.push({ agentId: a.id, agent: a, severity: 'amber', reason: `Practice GPA below 2.0 (currently ${gpa.toFixed(1)})`, metric: `gpa-${gpa.toFixed(1)}`, lastActive })
+      if (gpa >= 0 && gpa < 2.0) {
+        list.push({ agentId: a.id, agent: a, severity: 'red', reason: `Practice GPA below 2.0 (currently ${gpa.toFixed(1)})`, metric: `gpa-${gpa.toFixed(1)}`, lastActive })
+      } else if (gpa >= 0 && gpa < 3.0) {
+        list.push({ agentId: a.id, agent: a, severity: 'amber', reason: `Practice GPA below 3.0 (currently ${gpa.toFixed(1)})`, metric: `gpa-${gpa.toFixed(1)}`, lastActive })
       }
 
       // Inactivity flags
-      if (ps.length > 0 && recent14 === 0) {
-        list.push({ agentId: a.id, agent: a, severity: 'red', reason: 'No practice sessions in the last 14 days', metric: 'inactive-14', lastActive })
-      } else if (ps.length > 0 && recent7 === 0) {
-        list.push({ agentId: a.id, agent: a, severity: 'amber', reason: 'No practice sessions in the last 7 days', metric: 'inactive-7', lastActive })
+      if (ps.length > 0 && recent7 < 3) {
+        list.push({ agentId: a.id, agent: a, severity: 'amber', reason: `Fewer than 3 sessions in the last 7 days (${recent7} sessions)`, metric: `inactive-${recent7}`, lastActive })
       }
 
       // Streak broken
@@ -242,6 +240,46 @@ export default function SupervisorFlags() {
           ))}
         </div>
       )}
+
+      {/* Dismissed flags */}
+      {(() => {
+        const dismissedFlags = flags.filter((f) => dismissed[f.id])
+        if (dismissedFlags.length === 0) return null
+        return (
+          <motion.div
+            style={{ marginTop: 28 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.4, delay: 0.2 }}
+          >
+            <div className="label-cap" style={{ marginBottom: 10, color: 'var(--text-muted)' }}>Dismissed ({dismissedFlags.length})</div>
+            <div className="flags-list dismissed">
+              {dismissedFlags.map((f) => (
+                <div key={f.id} className={`card flag-card flag-${f.severity} flag-dismissed`}>
+                  <div className="flag-card-main">
+                    <div className="flag-agent">
+                      <div className="sv-avatar">{initials(f.agent.name, f.agent.email)}</div>
+                      <div>
+                        <div className="sv-agent-name">{f.agent.name || f.agent.email}</div>
+                      </div>
+                    </div>
+                    <div className="flag-detail">
+                      <div className="flag-reason" style={{ color: 'var(--text-muted)' }}>
+                        {f.reason}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flag-actions">
+                    <button className="flag-dismiss" onClick={() => { const next = { ...dismissed }; delete next[f.id]; setDismissedState(next); setDismissed(next) }} title="Restore">
+                      Restore
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )
+      })()}
     </div>
   )
 }
