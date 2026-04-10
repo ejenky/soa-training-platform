@@ -17,6 +17,7 @@ import {
 import { useAuth } from '../contexts/AuthContext'
 import { pb } from '../lib/pb'
 import { CATEGORIES, categoryMastery } from '../lib/gamification'
+import { fetchDueReviews } from '../lib/spacedRepetition'
 
 const ICON_MAP = {
   Target, Shield, EyeSlash, Moon, Question, Clock, Users, CurrencyDollar, Flame, HeartStraight,
@@ -47,6 +48,7 @@ export default function Practice() {
   const [difficulty, setDifficulty] = useState(2)
   const [selectedCat, setSelectedCat] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [dueCount, setDueCount] = useState(0)
 
   useEffect(() => {
     let cancelled = false
@@ -66,9 +68,12 @@ export default function Practice() {
             rs = await pb.collection('session_responses').getFullList({ filter, expand: 'objection_id' }).catch(() => [])
           }
         }
+        const dueReviews = await fetchDueReviews(pb, user?.id)
+
         if (cancelled) return
         setObjectionCounts(counts)
         setResponses(rs)
+        setDueCount(dueReviews.length)
       } catch (e) {
         console.error(e)
       } finally {
@@ -96,6 +101,30 @@ export default function Practice() {
         <h1>Practice</h1>
         <p className="lede">Drill objections from real callers. Pick a category, dial in the difficulty, and go.</p>
       </div>
+
+      {dueCount > 0 && (
+        <motion.div
+          className="card review-due-card"
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+        >
+          <div className="review-due-content">
+            <div>
+              <h3 className="review-due-title">Due for Review</h3>
+              <p className="review-due-desc">
+                You have <strong className={dueCount >= 4 ? 'text-error' : 'text-amber'}>{dueCount}</strong> objection{dueCount !== 1 ? 's' : ''} due for spaced repetition review.
+              </p>
+            </div>
+            <button
+              className="cta"
+              onClick={() => navigate('/practice/session?mode=review&type=mixed&stage=intro_soa&difficulty=2')}
+            >
+              Start Review ({dueCount}) <ArrowRight size={14} weight="regular" />
+            </button>
+          </div>
+        </motion.div>
+      )}
 
       <div className="label-cap" style={{ marginBottom: 10 }}>Categories</div>
       <div className="category-grid">

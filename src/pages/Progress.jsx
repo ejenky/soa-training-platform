@@ -5,6 +5,7 @@ import { Target, Flame, BookOpen, Trophy, Star, Medal, ShieldCheck, Crown, Arrow
 import { useAuth } from '../contexts/AuthContext'
 import { pb } from '../lib/pb'
 import { categoryMastery, computeStreak, computeXP, heatmapData, sessionsInLastDays } from '../lib/gamification'
+import { fetchAllReviews, isDueForReview } from '../lib/spacedRepetition'
 
 const ACHIEVEMENTS = [
   { key: 'first_drill', name: 'First Drill', desc: 'Complete a session', Icon: Target },
@@ -90,6 +91,8 @@ export default function Progress() {
   const [sessions, setSessions] = useState([])
   const [responses, setResponses] = useState([])
   const [lessons, setLessons] = useState([])
+  const [reviewQueue, setReviewQueue] = useState([])
+  const [reviewObjections, setReviewObjections] = useState({})
 
   useEffect(() => {
     let cancelled = false
@@ -105,11 +108,23 @@ export default function Progress() {
           const filter = ps.slice(0, 60).map((p) => `session_id = "${p.id}"`).join(' || ')
           rs = await pb.collection('session_responses').getFullList({ filter, expand: 'objection_id' })
         }
+        // Fetch spaced repetition queue
+        const rq = await fetchAllReviews(pb, user.id)
+        let rqObjs = {}
+        if (rq.length > 0) {
+          const objIds = [...new Set(rq.map((r) => r.objection_id))]
+          const objFilter = objIds.map((id) => `id = "${id}"`).join(' || ')
+          const objs = await pb.collection('objections').getFullList({ filter: objFilter }).catch(() => [])
+          rqObjs = Object.fromEntries(objs.map((o) => [o.id, o]))
+        }
+
         if (cancelled) return
         setCompletions(cs)
         setSessions(ps)
         setResponses(rs)
         setLessons(ls)
+        setReviewQueue(rq)
+        setReviewObjections(rqObjs)
       } catch (e) {
         console.error(e)
       } finally {
@@ -239,6 +254,60 @@ export default function Progress() {
         <p style={{ fontSize: 12 }}>Last 12 weeks of training activity.</p>
         <Heatmap data={heatmap} />
       </motion.div>
+
+      {reviewQueue.length > 0 && (
+        <motion.div className="card" style={{ marginTop: 18 }} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.22 }}>
+          <div className="row between">
+            <h2>Spaced Repetition</h2>
+            {reviewQueue.filter(isDueForReview).length > 0 && (
+              <Link to="/practice/session?mode=review&type=mixed&stage=intro_soa&difficulty=2" style={{ fontSize: 12 }}>Start review →</Link>
+            )}
+          </div>
+          <div className="stats-strip" style={{ marginBottom: 16 }}>
+            <div className="stat">
+              <div className="label"><span className="dot blue" />In Queue</div>
+              <div className="value">{reviewQueue.length}</div>
+              <div className="meta">total objections</div>
+            </div>
+            <div className="stat">
+              <div className="label"><span className={`dot ${reviewQueue.filter(isDueForReview).length > 0 ? 'red' : 'green'}`} />Due Today</div>
+              <div className="value">{reviewQueue.filter(isDueForReview).length}</div>
+              <div className="meta">need review</div>
+            </div>
+            <div className="stat">
+              <div className="label"><span className="dot amber" />Due This Week</div>
+              <div className="value">{reviewQueue.filter((r) => {
+                const d = new Date(r.next_review)
+                const weekEnd = new Date()
+                weekEnd.setDate(weekEnd.getDate() + 7)
+                return d <= weekEnd
+              }).length}</div>
+              <div className="meta">next 7 days</div>
+            </div>
+            <div className="stat">
+              <div className="label"><span className="dot green" />Avg Ease</div>
+              <div className="value">{(reviewQueue.reduce((a, r) => a + (r.ease_factor || 2.5), 0) / reviewQueue.length).toFixed(1)}</div>
+              <div className="meta">{(reviewQueue.reduce((a, r) => a + (r.ease_factor || 2.5), 0) / reviewQueue.length) >= 2.0 ? 'good mastery' : 'needs work'}</div>
+            </div>
+          </div>
+          <div className="label-cap" style={{ marginBottom: 8 }}>Upcoming Reviews</div>
+          <div className="sr-upcoming">
+            {reviewQueue.sort((a, b) => new Date(a.next_review) - new Date(b.next_review)).slice(0, 5).map((r) => {
+              const obj = reviewObjections[r.objection_id]
+              const due = isDueForReview(r)
+              return (
+                <div key={r.id} className={`sr-upcoming-row ${due ? 'due' : ''}`}>
+                  <div className="sr-upcoming-text">{obj?.text ? `"${obj.text.slice(0, 70)}${obj.text.length > 70 ? '…' : ''}"` : r.objection_id}</div>
+                  <div className="sr-upcoming-meta">
+                    <span className={`badge ${due ? 'danger' : 'info'}`}>{due ? 'Due now' : new Date(r.next_review).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                    <span className="badge">Ease {r.ease_factor}</span>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </motion.div>
+      )}
 
       <motion.div className="card" style={{ marginTop: 18 }} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.25 }}>
         <h2>Achievements</h2>

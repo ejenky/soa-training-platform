@@ -18,6 +18,7 @@ import {
 import { useAuth } from '../contexts/AuthContext'
 import { pb } from '../lib/pb'
 import { gradeFreeText, gradeMultipleChoice } from '../lib/grading'
+import { updateReviewQueue, fetchDueReviews } from '../lib/spacedRepetition'
 
 /* ── Script blocks ─────────────────────────────────────────────── */
 const SCRIPT_BLOCKS = [
@@ -293,6 +294,7 @@ export default function PracticeSession() {
   const stage = params.get('stage') || 'intro_soa'
   const sessionType = params.get('type') || 'multiple_choice'
   const difficulty = parseInt(params.get('difficulty') || '2', 10)
+  const isReviewMode = params.get('mode') === 'review'
 
   /* ── Core state ────────────────────────────────────────────── */
   const [loading, setLoading] = useState(true)
@@ -337,30 +339,50 @@ export default function PracticeSession() {
     let cancelled = false
     async function load() {
       let list = []
-      try {
-        const filterParts = ['active = true']
-        if (stage) filterParts.push(`call_stage = "${stage}"`)
-        const baseFilter = filterParts.join(' && ')
 
-        const fetched = await pb.collection('objections').getFullList({
-          filter: `${baseFilter} && difficulty <= ${difficulty}`,
-          sort: '@random',
-        })
-        list = fetched
-      } catch (e) {
-        console.error('Failed to fetch objections, using fallbacks', e)
+      if (isReviewMode) {
+        // Review mode: fetch due objections from review_queue
+        try {
+          const dueRecords = await fetchDueReviews(pb, user.id)
+          if (dueRecords.length > 0) {
+            const objIds = dueRecords.map((r) => r.objection_id)
+            const filter = objIds.map((id) => `id = "${id}"`).join(' || ')
+            list = await pb.collection('objections').getFullList({ filter })
+            list = shuffle(list)
+          }
+        } catch (e) {
+          console.error('Failed to load review queue', e)
+        }
+        if (list.length === 0) {
+          // No due reviews — fall back to normal mode
+          list = shuffle(FALLBACK_OBJECTIONS.filter((o) => o.difficulty <= difficulty))
+        }
+      } else {
+        try {
+          const filterParts = ['active = true']
+          if (stage) filterParts.push(`call_stage = "${stage}"`)
+          const baseFilter = filterParts.join(' && ')
+
+          const fetched = await pb.collection('objections').getFullList({
+            filter: `${baseFilter} && difficulty <= ${difficulty}`,
+            sort: '@random',
+          })
+          list = fetched
+        } catch (e) {
+          console.error('Failed to fetch objections, using fallbacks', e)
+        }
+
+        if (list.length === 0) {
+          list = shuffle(FALLBACK_OBJECTIONS.filter((o) => o.difficulty <= difficulty))
+        }
       }
 
-      if (list.length === 0) {
-        list = shuffle(FALLBACK_OBJECTIONS.filter((o) => o.difficulty <= difficulty))
-      }
-
-      const count = objectionCountForLevel(difficulty)
+      const count = isReviewMode ? list.length : objectionCountForLevel(difficulty)
       // Ensure we have enough — repeat if needed
       while (list.length < count) {
         list = [...list, ...shuffle(list)]
       }
-      list = list.slice(0, count)
+      if (!isReviewMode) list = list.slice(0, count)
 
       if (cancelled) return
 
@@ -429,7 +451,7 @@ export default function PracticeSession() {
     }
     if (user?.id) load()
     return () => { cancelled = true }
-  }, [user?.id, stage, sessionType, difficulty, tokens.length])
+  }, [user?.id, stage, sessionType, difficulty, tokens.length, isReviewMode])
 
   /* ── Teleprompter word advance ─────────────────────────────── */
   useEffect(() => {
@@ -508,7 +530,14 @@ export default function PracticeSession() {
     if (sessionId && payload.objection_id) {
       pb.collection('session_responses').create(payload).catch((e) => console.error('Failed to save response', e))
     }
-  }, [objections, currentObjIdx, sessionId, selected, text])
+
+    // Update spaced repetition queue
+    const objId = obj.objection.id?.startsWith('fb') ? null : obj.objection.id
+    if (objId) {
+      const pct = grade.max > 0 ? Math.round((grade.score / grade.max) * 100) : 0
+      updateReviewQueue(pb, user.id, objId, pct)
+    }
+  }, [objections, currentObjIdx, sessionId, selected, text, user?.id])
 
   /* ── Continue after feedback ───────────────────────────────── */
   const continueAfterFeedback = useCallback(() => {

@@ -4,6 +4,7 @@ import { motion } from 'motion/react'
 import { ArrowRight } from '@phosphor-icons/react'
 import { useAuth } from '../contexts/AuthContext'
 import { pb } from '../lib/pb'
+import { fetchDueReviews } from '../lib/spacedRepetition'
 import {
   CATEGORIES,
   categoryMastery,
@@ -85,6 +86,7 @@ export default function Dashboard() {
   const [responses, setResponses] = useState([])
   const [topAgents, setTopAgents] = useState([])
   const [loading, setLoading] = useState(true)
+  const [reviewDueCount, setReviewDueCount] = useState(0)
 
   useEffect(() => {
     let cancelled = false
@@ -121,12 +123,15 @@ export default function Dashboard() {
             .slice(0, 5)
         } catch { /* optional */ }
 
+        const dueReviews = await fetchDueReviews(pb, user.id)
+
         if (cancelled) return
         setLessons(ls)
         setCompletions(cs)
         setSessions(ps)
         setResponses(rs)
         setTopAgents(lb)
+        setReviewDueCount(dueReviews.length)
       } catch (e) {
         console.error(e)
       } finally {
@@ -241,6 +246,12 @@ export default function Dashboard() {
                 </Link>
               )}
             </div>
+            {reviewDueCount > 0 && (
+              <div className={`review-due-notice ${reviewDueCount >= 4 ? 'urgent' : ''}`}>
+                You have <strong>{reviewDueCount}</strong> objection{reviewDueCount !== 1 ? 's' : ''} due for review.{' '}
+                <Link to="/practice/session?mode=review&type=mixed&stage=intro_soa&difficulty=2">Start review →</Link>
+              </div>
+            )}
             <div className="xp-bar">
               <span className="level-badge">{c.lvl.name}</span>
               <div className="bar">
