@@ -1532,16 +1532,20 @@ tbody tr:hover td { background: var(--row-hover); }
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: var(--bg);
+  position: relative;
 }
 .login-card {
+  position: relative;
+  z-index: 2;
   width: 100%;
   max-width: 380px;
   padding: 36px 32px;
-  background: var(--bg);
-  border: 1px solid var(--border-subtle);
+  background: rgba(15, 17, 23, 0.72);
+  backdrop-filter: blur(10px) saturate(1.2);
+  -webkit-backdrop-filter: blur(10px) saturate(1.2);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: var(--radius);
-  box-shadow: var(--card-shadow);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.02);
 }
 .login-card .login-brand {
   text-align: center;

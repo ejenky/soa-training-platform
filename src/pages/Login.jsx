@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate, Navigate, Link } from 'react-router-dom'
 import { motion } from 'motion/react'
 import { useAuth } from '../contexts/AuthContext'
+import AuthBackground from '../components/AuthBackground'
 
 export default function Login() {
   const { login, isAuthenticated, loading } = useAuth()
@@ -28,7 +29,8 @@ export default function Login() {
   }
 
   return (
-    <div className="login-shell">
+    <div className="lp login-shell">
+      <AuthBackground />
       <motion.div
         className="login-card"
         initial={{ opacity: 0, y: 16 }}

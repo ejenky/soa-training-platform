@@ -3,6 +3,7 @@ import { useNavigate, Navigate, Link } from 'react-router-dom'
 import { motion } from 'motion/react'
 import { useAuth } from '../contexts/AuthContext'
 import { pb } from '../lib/pb'
+import AuthBackground from '../components/AuthBackground'
 
 /*
  * NOTE: PocketBase admin must enable self-registration for the "users" collection.
@@ -72,7 +73,8 @@ export default function Register() {
   }
 
   return (
-    <div className="login-shell">
+    <div className="lp login-shell">
+      <AuthBackground />
       <motion.div
         className="login-card"
         initial={{ opacity: 0, y: 16 }}
