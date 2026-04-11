@@ -8,7 +8,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { pb } from '../lib/pb'
 import { CATEGORIES } from '../lib/gamification'
 
-const TABS = ['Lessons', 'Objections', 'Quiz Questions', 'Scenarios']
+const TABS = ['Lessons', 'Objections', 'Quiz Questions', 'Roleplays']
 const BLOOM_LEVELS = ['remember', 'understand', 'apply', 'analyze']
 const CALL_STAGES = [
   { value: 'intro_soa', label: 'Intro / SOA' },

@@ -338,6 +338,56 @@ export default function Practice() {
           Start drill <ArrowRight size={14} weight="regular" />
         </button>
       </motion.div>
+
+      <motion.div
+        className="card"
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.14 }}
+        style={{
+          marginTop: 20,
+          background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(37, 99, 235, 0.05))',
+          border: '1px solid rgba(139, 92, 246, 0.22)',
+        }}
+      >
+        <div className="row between" style={{ alignItems: 'center', gap: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 10,
+                background: 'rgba(139, 92, 246, 0.15)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <Phone size={22} weight="regular" style={{ color: '#8B5CF6' }} />
+            </div>
+            <div>
+              <h3 style={{ margin: 0, fontSize: 16 }}>Full Call Roleplays</h3>
+              <p className="text-muted" style={{ margin: '2px 0 0', fontSize: 12 }}>
+                Practice complete phone conversations with AI clients. Covers intro, objection handling, and closing in one session.
+              </p>
+              {scenarios.length > 0 && (
+                <p style={{ margin: '4px 0 0', fontSize: 11, color: '#8B5CF6', fontWeight: 600 }}>
+                  {scenarios.length} roleplay{scenarios.length !== 1 ? 's' : ''} available
+                </p>
+              )}
+            </div>
+          </div>
+          <Link to="/scenarios">
+            <button
+              className="cta"
+              style={{ background: '#8B5CF6', borderColor: '#8B5CF6' }}
+            >
+              View Roleplays <ArrowRight size={14} weight="regular" />
+            </button>
+          </Link>
+        </div>
+      </motion.div>
     </div>
   )
 }

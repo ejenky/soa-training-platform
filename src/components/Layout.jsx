@@ -17,6 +17,7 @@ import {
   ClockCounterClockwise,
   Medal,
   Notebook,
+  Phone,
 } from '@phosphor-icons/react'
 import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'
@@ -35,6 +36,7 @@ const PAGE_TITLES = {
   '/dashboard': 'Dashboard',
   '/lessons': 'Lessons',
   '/practice': 'Practice',
+  '/scenarios': 'Roleplays',
   '/progress': 'Progress',
   '/supervisor': 'Team Overview',
   '/supervisor/flags': 'Flags',
@@ -149,6 +151,7 @@ export default function Layout() {
       meta: lessonProgress.total > 0 ? `${lessonProgress.done}/${lessonProgress.total}` : null,
     },
     { to: '/practice', label: 'Practice', Icon: Target, dot: hasPracticeToday },
+    { to: '/scenarios', label: 'Roleplays', Icon: Phone },
     { to: '/progress', label: 'Progress', Icon: ChartLine },
     { to: '/certification', label: 'Certification', Icon: Medal },
     { to: '/history', label: 'History', Icon: ClockCounterClockwise },
@@ -312,7 +315,7 @@ export default function Layout() {
 
       {!immersive && (
         <nav className="bottom-tabs">
-          {agentNav.slice(0, 5).map((l) => (
+          {agentNav.slice(0, 6).map((l) => (
             <NavLink key={l.to} to={l.to} end className={({ isActive }) => (isActive ? 'active' : '')}>
               <l.Icon size={18} weight="regular" />
               <span>{l.label}</span>

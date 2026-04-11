@@ -295,7 +295,7 @@ export default function ScenarioPlayer() {
         <motion.div className="tp-summary" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}>
           <div className="summary-head">
             <CheckCircle size={48} weight="regular" color={summary.passed ? 'var(--success)' : 'var(--warn)'} />
-            <h2>Scenario Complete</h2>
+            <h2>Roleplay Complete</h2>
             <p>{summary.passed ? 'Great job handling that call!' : 'Good practice — keep working on those objections.'}</p>
           </div>
           <div className="stats-strip">
@@ -324,7 +324,7 @@ export default function ScenarioPlayer() {
             </>
           )}
           <div className="row" style={{ marginTop: 24, gap: 12 }}>
-            <button className="primary lg" onClick={() => navigate('/scenarios')}>Back to Scenarios</button>
+            <button className="primary lg" onClick={() => navigate('/scenarios')}>Back to Roleplays</button>
             <button onClick={() => navigate('/practice')}>Practice</button>
           </div>
         </motion.div>
@@ -340,6 +340,7 @@ export default function ScenarioPlayer() {
       {/* Top bar */}
       <div className="sp-topbar">
         <Link to="/scenarios" className="sp-exit"><X size={16} /></Link>
+        <span className="label-cap" style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.08em' }}>Roleplay</span>
         <div className="sp-persona">
           <div className="sp-persona-av">{personaInitials(scenario.persona_name)}</div>
           <div>

@@ -51,10 +51,39 @@ export default function Scenarios() {
   return (
     <div className="page">
       <div className="page-header">
-        <h1>Roleplay Scenarios</h1>
-        <p className="lede">Practice complete simulated phone calls with distinct client personas.</p>
+        <h1>Roleplays</h1>
+        <p className="lede">Practice full phone calls with realistic AI clients. Each roleplay simulates a real caller based on actual call transcripts.</p>
       </div>
 
+      {scenarios.length === 0 ? (
+        <motion.div
+          className="card empty-state"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          style={{ textAlign: 'center', padding: '64px 28px' }}
+        >
+          <div
+            style={{
+              width: 110,
+              height: 110,
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(37, 99, 235, 0.1))',
+              border: '1px solid rgba(139, 92, 246, 0.25)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 20px',
+            }}
+          >
+            <Phone size={52} weight="regular" style={{ color: '#8B5CF6' }} />
+          </div>
+          <h3 style={{ marginBottom: 10 }}>Roleplays coming soon</h3>
+          <p className="text-muted" style={{ maxWidth: 540, margin: '0 auto', fontSize: 14, lineHeight: 1.6 }}>
+            Your supervisor is building realistic call scenarios from real caller transcripts. Each roleplay will simulate a complete phone conversation with a unique client persona, so you can practice handling the full call from intro to close.
+          </p>
+        </motion.div>
+      ) : (
+      <>
       {/* Filters */}
       <div className="sc-filter-bar">
         <select value={diffFilter} onChange={(e) => setDiffFilter(+e.target.value)}>
@@ -68,14 +97,14 @@ export default function Scenarios() {
           <option value="all">All Categories</option>
           {categories.map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
-        <span className="sc-count">{filtered.length} scenario{filtered.length !== 1 ? 's' : ''}</span>
+        <span className="sc-count">{filtered.length} roleplay{filtered.length !== 1 ? 's' : ''}</span>
       </div>
 
       {filtered.length === 0 ? (
         <motion.div className="card empty-state" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
           <Phone size={40} weight="regular" style={{ color: 'var(--text-muted)', marginBottom: 12 }} />
-          <h3>No scenarios yet</h3>
-          <p>Supervisors can create roleplay scenarios in the <Link to="/supervisor/content">Content Manager</Link>.</p>
+          <h3>No roleplays match your filters</h3>
+          <p>Try clearing the difficulty or category filter.</p>
         </motion.div>
       ) : (
         <div className="sc-grid">
@@ -105,11 +134,13 @@ export default function Scenarios() {
                 )}
               </div>
               <button className="cta sc-start-btn" onClick={() => navigate(`/practice/scenario/${s.id}`)}>
-                Start Scenario <ArrowRight size={14} weight="regular" />
+                Start Roleplay <ArrowRight size={14} weight="regular" />
               </button>
             </motion.div>
           ))}
         </div>
+      )}
+      </>
       )}
     </div>
   )
