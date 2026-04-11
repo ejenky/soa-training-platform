@@ -138,7 +138,7 @@ const FEATURES = [
 ]
 
 const STEPS = [
-  { num: '01', title: 'Read the script', desc: 'A teleprompter walks you through the compliant Intro and SOA verbatim — word by word, at your speed.' },
+  { num: '01', title: 'Read the script', desc: 'Interactive lessons walk agents through compliance scripts, product knowledge, and call flow. Video content, required scripts, and knowledge checks.' },
   { num: '02', title: 'Handle the interruption', desc: 'The simulated client interrupts with a real objection from the field. You respond in real time.' },
   { num: '03', title: 'Get instant feedback', desc: 'Every response is graded against a compliance rubric. See exactly what you nailed and what you missed.' },
   { num: '04', title: 'Level up your certification', desc: 'Hit quiz and GPA thresholds to advance through three certification tiers and unlock harder material.' },
@@ -169,7 +169,8 @@ export default function Landing() {
     return () => window.removeEventListener('mousemove', onMove)
   }, [mouseX, mouseY])
 
-  const WORDS = ['Stop', 'losing', 'leads', 'at\u00A0the\u00A0SOA.']
+  const LINE_ONE = ['Train', 'smarter.']
+  const LINE_TWO = ['Close', 'more.']
 
   return (
     <div className="lp">
@@ -205,17 +206,28 @@ export default function Landing() {
           transition={{ duration: 0.6, delay: 0.2 }}
         >
           <span className="lp-pulse-dot" />
-          Now training 100+ agents
+          HealthInsurance.com Training Platform
         </motion.div>
 
         <h1 className="lp-hero-title">
-          {WORDS.map((word, i) => (
+          {LINE_ONE.map((word, i) => (
             <motion.span
-              key={i}
-              className={i === WORDS.length - 1 ? 'lp-gradient-text' : ''}
+              key={`a${i}`}
               initial={{ opacity: 0, y: 50 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.4 + i * 0.12, ease: [0.16, 1, 0.3, 1] }}
+            >
+              {word}{' '}
+            </motion.span>
+          ))}
+          <br />
+          {LINE_TWO.map((word, i) => (
+            <motion.span
+              key={`b${i}`}
+              className="lp-gradient-text"
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.4 + (LINE_ONE.length + i) * 0.12, ease: [0.16, 1, 0.3, 1] }}
             >
               {word}{' '}
             </motion.span>
@@ -228,7 +240,7 @@ export default function Landing() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 1.0 }}
         >
-          The Intro/SOA step loses 15–20% of Medicare leads. This platform drills your agents on the exact objections they'll face — with real scripts, real grading, and real results.
+          The complete sales training platform for HealthInsurance.com agents. Master objections, drill scripts, roleplay real calls, and get certified.
         </motion.p>
 
         <motion.div
@@ -259,14 +271,15 @@ export default function Landing() {
       <section className="lp-section lp-stats">
         <div className="lp-stats-grid">
           {[
-            { val: 15, suffix: '%', label: 'of leads lost at SOA' },
-            { val: 100, suffix: '+', label: 'agents trained' },
-            { val: 10, suffix: '', label: 'objection categories' },
-            { val: 85, suffix: '%', label: 'pass threshold' },
+            { val: 100, suffix: '+', label: 'agents onboarding', sub: 'across the agency' },
+            { val: 6, suffix: '', label: 'training modules', sub: 'scripts to certification' },
+            { val: 10, suffix: '', label: 'objection categories', sub: 'from real callers' },
+            { val: 3, suffix: '', label: 'certification tiers', sub: 'progressive mastery' },
           ].map((s, i) => (
             <Reveal key={i} className="lp-stat" delay={i * 0.1}>
               <div className="lp-stat-num"><Counter value={s.val} suffix={s.suffix} /></div>
               <div className="lp-stat-label">{s.label}</div>
+              <div className="lp-stat-sub">{s.sub}</div>
             </Reveal>
           ))}
         </div>
@@ -274,7 +287,7 @@ export default function Landing() {
 
       {/* Features */}
       <section className="lp-section">
-        <Reveal><h2 className="lp-section-title">Everything agents need to stop losing leads</h2></Reveal>
+        <Reveal><h2 className="lp-section-title">Everything your agents need.</h2></Reveal>
         <div className="lp-features-grid">
           {FEATURES.map((f, i) => (
             <Reveal key={i} className="lp-feature-card" delay={i * 0.08}>
@@ -309,8 +322,8 @@ export default function Landing() {
       {/* Bottom CTA */}
       <section className="lp-section lp-bottom-cta">
         <Reveal className="lp-cta-card">
-          <h2>Ready to stop losing leads?</h2>
-          <p>Get your team certified on the Intro/SOA in weeks, not months.</p>
+          <h2>Ready to level up your team?</h2>
+          <p>Give every agent the reps they need to handle any caller, any objection, every time.</p>
           <MagneticButton href="/register">
             Start Training <ArrowRight size={16} weight="bold" />
           </MagneticButton>
