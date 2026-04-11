@@ -355,7 +355,8 @@
   font-family: 'JetBrains Mono', monospace;
   font-size: 48px;
   font-weight: 700;
-  color: rgba(59, 130, 246, 0.25);
+  color: rgba(59, 130, 246, 0.5);
+  text-shadow: 0 0 20px rgba(59, 130, 246, 0.15);
   line-height: 1;
   flex-shrink: 0;
   width: 72px;
