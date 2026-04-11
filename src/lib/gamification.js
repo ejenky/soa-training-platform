@@ -115,16 +115,10 @@ export function heatmapData(sessions, completions, days = 84) {
 
 // Objection categories (must match seeded data) — uses Phosphor icon names
 export const CATEGORIES = [
-  { key: 'Expectation Mismatch', iconName: 'Target', color: '#F59E0B', tone: 'amber' },
-  { key: 'Plan Resistance', iconName: 'Shield', color: '#EF4444', tone: 'red' },
-  { key: 'Distrust', iconName: 'EyeSlash', color: '#8B5CF6', tone: 'violet' },
-  { key: 'Disengagement', iconName: 'Moon', color: '#64748B', tone: 'indigo' },
-  { key: 'Confusion', iconName: 'Question', color: '#06B6D4', tone: 'cyan' },
-  { key: 'Delay', iconName: 'Clock', color: '#F97316', tone: 'amber' },
-  { key: 'Third Party', iconName: 'Users', color: '#0EA5E9', tone: 'cyan' },
-  { key: 'Cost Concern', iconName: 'CurrencyDollar', color: '#10B981', tone: 'emerald' },
-  { key: 'Angry', iconName: 'Flame', color: '#DC2626', tone: 'red' },
-  { key: 'Health', iconName: 'HeartStraight', color: '#EC4899', tone: 'red' },
+  { key: 'Intro/SOA', iconName: 'Microphone', color: '#2563EB', tone: 'blue' },
+  { key: 'RWB Card', iconName: 'CreditCard', color: '#EF4444', tone: 'red' },
+  { key: 'SEP', iconName: 'CalendarCheck', color: '#F59E0B', tone: 'amber' },
+  { key: 'No Value', iconName: 'XCircle', color: '#8B5CF6', tone: 'violet' },
 ]
 
 export function categoryMastery(responses) {

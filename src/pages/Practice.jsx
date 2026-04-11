@@ -2,16 +2,10 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { motion } from 'motion/react'
 import {
-  Target,
-  Shield,
-  EyeSlash,
-  Moon,
-  Question,
-  Clock,
-  Users,
-  CurrencyDollar,
-  Flame,
-  HeartStraight,
+  Microphone,
+  CreditCard,
+  CalendarCheck,
+  XCircle,
   ArrowRight,
   Phone,
   Timer,
@@ -22,14 +16,21 @@ import { CATEGORIES, categoryMastery } from '../lib/gamification'
 import { fetchDueReviews } from '../lib/spacedRepetition'
 
 const ICON_MAP = {
-  Target, Shield, EyeSlash, Moon, Question, Clock, Users, CurrencyDollar, Flame, HeartStraight,
+  Microphone, CreditCard, CalendarCheck, XCircle,
 }
 
 const STAGES = [
   { value: 'intro_soa', label: 'Intro/SOA' },
-  { value: 'qualifying', label: 'Qualifying' },
-  { value: 'presenting', label: 'Presenting' },
-  { value: 'closing', label: 'Closing' },
+  { value: 'rwb_card', label: 'RWB Card' },
+  { value: 'sep', label: 'SEP' },
+  { value: 'no_value', label: 'No Value' },
+]
+
+const DIFFICULTY_LEVELS = [
+  { level: 1, label: 'Warm-up', color: '#10B981' },
+  { level: 2, label: 'Standard', color: '#2563EB' },
+  { level: 3, label: 'Tough', color: '#F59E0B' },
+  { level: 4, label: 'Brutal', color: '#EF4444' },
 ]
 
 const TYPES = [
@@ -37,8 +38,6 @@ const TYPES = [
   { value: 'free_text', label: 'Free Text' },
   { value: 'mixed', label: 'Mixed' },
 ]
-
-const DIFF_LABELS = ['', 'Warm-up', 'Standard', 'Tough', 'Brutal']
 
 export default function Practice() {
   const navigate = useNavigate()
@@ -191,9 +190,16 @@ export default function Practice() {
       )}
 
       <div className="label-cap" style={{ marginBottom: 10 }}>Categories</div>
-      <div className="category-grid">
+      <div
+        className="category-grid"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(2, 1fr)',
+          gap: 14,
+        }}
+      >
         {CATEGORIES.map((c, i) => {
-          const Icon = ICON_MAP[c.iconName] || Target
+          const Icon = ICON_MAP[c.iconName] || Microphone
           const m = masteryByCat[c.key]
           const count = objectionCounts[c.key] || 0
           const selected = selectedCat === c.key
@@ -206,8 +212,9 @@ export default function Practice() {
               initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: i * 0.04, ease: [0.16, 1, 0.3, 1] }}
+              style={{ padding: 20, minHeight: 96 }}
             >
-              <div className="icon"><Icon size={20} weight="regular" /></div>
+              <div className="icon"><Icon size={24} weight="regular" /></div>
               <div>
                 <div className="cat-name">{c.key}</div>
                 <div className="cat-meta">{count} obj · {m?.count || 0} graded</div>
@@ -277,27 +284,32 @@ export default function Practice() {
         </div>
 
         <div className="config-row">
-          <div className="row between">
-            <div className="label-cap">Difficulty</div>
-            <span className="text-mono" style={{ fontSize: 12, color: 'var(--green)', fontWeight: 600 }}>
-              Level {difficulty} · {DIFF_LABELS[difficulty]}
-            </span>
-          </div>
-          <div className="slider-wrap">
-            <input
-              type="range"
-              min="1"
-              max="4"
-              step="1"
-              value={difficulty}
-              onChange={(e) => setDifficulty(Number(e.target.value))}
-            />
-            <div className="slider-labels">
-              <span>Warm-up</span>
-              <span>Standard</span>
-              <span>Tough</span>
-              <span>Brutal</span>
-            </div>
+          <div className="label-cap">Difficulty</div>
+          <div
+            className="toggle-group"
+            style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}
+          >
+            {DIFFICULTY_LEVELS.map((d) => {
+              const on = difficulty === d.level
+              return (
+                <button
+                  key={d.level}
+                  type="button"
+                  className={on ? 'on' : ''}
+                  onClick={() => setDifficulty(d.level)}
+                  style={{
+                    minHeight: 44,
+                    fontWeight: 600,
+                    background: on ? d.color : 'transparent',
+                    borderColor: on ? d.color : 'var(--border-subtle)',
+                    color: on ? '#fff' : 'var(--text)',
+                  }}
+                >
+                  <span style={{ display: 'block', fontSize: 11, opacity: 0.75 }}>Level {d.level}</span>
+                  <span style={{ display: 'block', fontSize: 13 }}>{d.label}</span>
+                </button>
+              )
+            })}
           </div>
         </div>
 
