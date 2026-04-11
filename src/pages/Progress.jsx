@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'motion/react'
-import { Target, Flame, BookOpen, Trophy, Star, Medal, ShieldCheck, Crown, ArrowRight } from '@phosphor-icons/react'
+import { Target, Flame, BookOpen, Trophy, Star, Medal, ShieldCheck, Crown, ArrowRight, ChartLine } from '@phosphor-icons/react'
 import { useAuth } from '../contexts/AuthContext'
 import { pb } from '../lib/pb'
 import { categoryMastery, computeStreak, computeXP, heatmapData, sessionsInLastDays } from '../lib/gamification'
@@ -222,32 +222,52 @@ export default function Progress() {
         </div>
       </motion.div>
 
-      <div className="grid cols-2" style={{ marginTop: 18 }}>
-        <motion.div className="card" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }}>
-          <h2>30-Day Score Trend</h2>
-          <LineChart data={lineData} />
+      {sessions.length === 0 && completions.length === 0 ? (
+        <motion.div
+          className="card"
+          style={{ marginTop: 18, textAlign: 'center', padding: '56px 24px' }}
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
+        >
+          <ChartLine size={56} weight="regular" style={{ color: 'var(--text-muted)', marginBottom: 16 }} />
+          <h2 style={{ marginBottom: 8 }}>No training data yet</h2>
+          <p className="text-muted" style={{ fontSize: 14, marginBottom: 20 }}>
+            Complete your first lesson or practice drill to start tracking your progress.
+          </p>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <Link to="/lessons"><button className="primary">Go to Lessons <ArrowRight size={13} weight="regular" /></button></Link>
+            <Link to="/practice"><button>Go to Practice <ArrowRight size={13} weight="regular" /></button></Link>
+          </div>
         </motion.div>
-
-        <motion.div className="card" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.15 }}>
-          <h2>Mastery by Category</h2>
-          {sortedMastery.length === 0 ? (
-            <p>Run some drills first.</p>
-          ) : (
-            <div className="bars">
-              {sortedMastery.slice(0, 8).map((m) => {
-                const t = tone(m.pct)
-                return (
-                  <div key={m.key} className="bar-row">
-                    <div className="label">{m.key}</div>
-                    <div className="track"><div className={`fill ${t}`} style={{ width: `${m.pct}%` }} /></div>
-                    <div className={`pct ${t}`}>{m.pct}%</div>
-                  </div>
-                )
-              })}
-            </div>
+      ) : (
+        <div className="grid cols-2" style={{ marginTop: 18 }}>
+          {lineData.some((d) => d.y > 0) && (
+            <motion.div className="card" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }}>
+              <h2>30-Day Score Trend</h2>
+              <LineChart data={lineData} />
+            </motion.div>
           )}
-        </motion.div>
-      </div>
+
+          {sortedMastery.length > 0 && (
+            <motion.div className="card" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.15 }}>
+              <h2>Mastery by Category</h2>
+              <div className="bars">
+                {sortedMastery.slice(0, 8).map((m) => {
+                  const t = tone(m.pct)
+                  return (
+                    <div key={m.key} className="bar-row">
+                      <div className="label">{m.key}</div>
+                      <div className="track"><div className={`fill ${t}`} style={{ width: `${m.pct}%` }} /></div>
+                      <div className={`pct ${t}`}>{m.pct}%</div>
+                    </div>
+                  )
+                })}
+              </div>
+            </motion.div>
+          )}
+        </div>
+      )}
 
       <motion.div className="card" style={{ marginTop: 18 }} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.2 }}>
         <h2>Activity Heatmap</h2>

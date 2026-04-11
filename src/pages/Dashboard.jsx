@@ -187,6 +187,59 @@ export default function Dashboard() {
   const c = computed
   const recentSessions = sessions.slice(0, 5)
 
+  // Smart drill recommendation
+  const recommendation = (() => {
+    if (reviewDueCount > 0) {
+      return {
+        title: `You have ${reviewDueCount} objection${reviewDueCount !== 1 ? 's' : ''} due for review`,
+        desc: 'Keep what you learned sharp with spaced repetition.',
+        btn: 'Start Review',
+        href: '/practice/session?mode=review&type=mixed&stage=intro_soa&difficulty=2',
+      }
+    }
+    const incomplete = completions.find((cc) => !cc.passed)
+    if (incomplete) {
+      const lesson = lessons.find((l) => l.id === incomplete.lesson_id)
+      if (lesson) {
+        return {
+          title: `Continue Lesson: ${lesson.title}`,
+          desc: 'Pick up where you left off — pass 85%+ to unlock the next lesson.',
+          btn: 'Continue Lesson',
+          href: `/lessons/${lesson.id}`,
+        }
+      }
+    }
+    const weakest = mastery.filter((m) => m.count > 0).sort((a, b) => a.pct - b.pct)[0]
+    if (weakest && weakest.pct < 70) {
+      return {
+        title: `Drill your weak spot: ${weakest.key}`,
+        desc: `Your mastery is ${weakest.pct}% — let's push it above 70%.`,
+        btn: 'Start drill',
+        href: `/practice/session?stage=intro_soa&type=mixed&difficulty=2&category=${encodeURIComponent(weakest.key)}`,
+      }
+    }
+    return {
+      title: 'Stay sharp: Quick 5-minute drill',
+      desc: 'Five real objections at your level. Earn XP, keep your streak alive.',
+      btn: 'Start drill',
+      href: '/practice/session?stage=intro_soa&type=multiple_choice&difficulty=2',
+    }
+  })()
+
+  // Daily goal tracker — drills completed today
+  const drillsToday = (() => {
+    const start = new Date()
+    start.setHours(0, 0, 0, 0)
+    return sessions.filter((s) => new Date(s.created) >= start).length
+  })()
+  const DAILY_GOAL = 3
+  const dailyProgress = Math.min(drillsToday, DAILY_GOAL)
+
+  // Leaderboard visibility
+  const rankedCount = topAgents.filter((a) => a.xp > 0).length
+  const showLeaderboard = rankedCount >= 3
+  const showLeaderboardEmpty = !showLeaderboard && sessions.length === 0
+
   // Top weak categories — show 5 with most data
   const weakSpots = mastery.filter((m) => m.count > 0).sort((a, b) => a.pct - b.pct).slice(0, 5)
   if (weakSpots.length === 0) {
@@ -231,27 +284,53 @@ export default function Dashboard() {
           {/* Drill CTA */}
           <Animated i={1} className="card drill-cta">
             <div className="overline">Today's Drill</div>
-            <h2>5-Minute Objection Sprint</h2>
-            <p>Five real objections at your level. Earn XP, keep your streak alive.</p>
+            <h2>{recommendation.title}</h2>
+            <p>{recommendation.desc}</p>
             <div className="cta-row">
               <button
                 className="cta lg"
-                onClick={() => navigate('/practice/session?stage=intro_soa&type=multiple_choice&difficulty=2')}
+                onClick={() => navigate(recommendation.href)}
               >
-                Start drill <ArrowRight size={14} weight="regular" />
+                {recommendation.btn} <ArrowRight size={14} weight="regular" />
               </button>
-              {c.nextLesson && (
+              {c.nextLesson && recommendation.btn !== 'Continue Lesson' && (
                 <Link to={`/lessons/${c.nextLesson.id}`}>
                   <button className="lg">Resume lesson</button>
                 </Link>
               )}
             </div>
-            {reviewDueCount > 0 && (
-              <div className={`review-due-notice ${reviewDueCount >= 4 ? 'urgent' : ''}`}>
-                You have <strong>{reviewDueCount}</strong> objection{reviewDueCount !== 1 ? 's' : ''} due for review.{' '}
-                <Link to="/practice/session?mode=review&type=mixed&stage=intro_soa&difficulty=2">Start review →</Link>
+
+            {/* Daily goal tracker */}
+            <div
+              className="daily-goal"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                marginTop: 18,
+                paddingTop: 16,
+                borderTop: '1px solid var(--border-subtle)',
+              }}
+            >
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>
+                Daily Goal: <span style={{ color: 'var(--text)' }}>{drillsToday}/{DAILY_GOAL}</span> drills completed
               </div>
-            )}
+              <div style={{ display: 'flex', gap: 6, marginLeft: 'auto' }}>
+                {Array.from({ length: DAILY_GOAL }).map((_, i) => (
+                  <span
+                    key={i}
+                    style={{
+                      width: 12,
+                      height: 12,
+                      borderRadius: '50%',
+                      background: i < dailyProgress ? 'var(--green)' : 'var(--border-subtle)',
+                      transition: 'background 0.3s ease',
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+
             <div className="xp-bar">
               <span className="level-badge">{c.lvl.name}</span>
               <div className="bar">
@@ -288,26 +367,40 @@ export default function Dashboard() {
 
         <div className="stack">
           {/* Leaderboard */}
-          <Animated i={2} className="card">
-            <div className="row between">
+          {showLeaderboard && (
+            <Animated i={2} className="card">
+              <div className="row between">
+                <h2>Leaderboard</h2>
+                <span className="label-cap">This month</span>
+              </div>
+              <div className="lb-list">
+                {topAgents.map((a, i) => {
+                  const rankCls = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : ''
+                  return (
+                    <div key={a.id} className={`lb-row ${a.id === user?.id ? 'me' : ''}`}>
+                      <div className={`rank ${rankCls}`}>{i + 1}</div>
+                      <div className="av">{initials(a.name)}</div>
+                      <div className="name">{a.name}</div>
+                      <div className="xp">{a.xp.toLocaleString()}</div>
+                    </div>
+                  )
+                })}
+              </div>
+            </Animated>
+          )}
+          {showLeaderboardEmpty && (
+            <Animated i={2} className="card">
               <h2>Leaderboard</h2>
-              <span className="label-cap">This month</span>
-            </div>
-            <div className="lb-list">
-              {topAgents.length === 0 && <p className="text-muted" style={{ fontSize: 12 }}>No agents ranked yet.</p>}
-              {topAgents.map((a, i) => {
-                const rankCls = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : ''
-                return (
-                  <div key={a.id} className={`lb-row ${a.id === user?.id ? 'me' : ''}`}>
-                    <div className={`rank ${rankCls}`}>{i + 1}</div>
-                    <div className="av">{initials(a.name)}</div>
-                    <div className="name">{a.name}</div>
-                    <div className="xp">{a.xp.toLocaleString()}</div>
-                  </div>
-                )
-              })}
-            </div>
-          </Animated>
+              <p className="text-muted" style={{ fontSize: 13, marginTop: 8 }}>
+                Complete your first drill to start ranking.
+              </p>
+              <Link to="/practice">
+                <button className="primary" style={{ marginTop: 12 }}>
+                  Go to Practice <ArrowRight size={13} weight="regular" />
+                </button>
+              </Link>
+            </Animated>
+          )}
 
           {/* Recent activity */}
           <Animated i={3} className="card">

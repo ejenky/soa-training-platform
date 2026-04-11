@@ -174,8 +174,22 @@ export default function History() {
 
       {/* Table */}
       {filtered.length === 0 ? (
-        <Animated i={1} className="card empty-state">
-          <Target size={40} weight="regular" style={{ color: 'var(--text-muted)', marginBottom: 12 }} />
+        <Animated i={1} className="card empty-state" >
+          <div
+            style={{
+              width: 96,
+              height: 96,
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(16, 185, 129, 0.08))',
+              border: '1px solid var(--border-subtle)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 20px',
+            }}
+          >
+            <Target size={44} weight="regular" style={{ color: 'var(--text-muted)' }} />
+          </div>
           <h3>No sessions yet</h3>
           <p>Head to <Link to="/practice">Practice</Link> to run your first drill.</p>
         </Animated>

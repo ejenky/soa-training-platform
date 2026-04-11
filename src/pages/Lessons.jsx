@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'motion/react'
-import { Lock, Check, ArrowRight } from '@phosphor-icons/react'
+import { Lock, Check, ArrowRight, BookOpen } from '@phosphor-icons/react'
 import { useAuth } from '../contexts/AuthContext'
 import { pb } from '../lib/pb'
 
@@ -58,7 +58,43 @@ export default function Lessons() {
       </div>
 
       {lessons.length === 0 && (
-        <div className="card empty">No lessons yet. Check back soon.</div>
+        <div className="card empty" style={{ textAlign: 'center', padding: '48px 24px' }}>
+          <BookOpen size={48} weight="regular" style={{ color: 'var(--text-muted)', marginBottom: 16 }} />
+          <h3 style={{ margin: 0, marginBottom: 6 }}>Your training curriculum is being built</h3>
+          <p className="text-muted" style={{ fontSize: 13, margin: 0 }}>
+            Check back soon for your first lesson.
+          </p>
+        </div>
+      )}
+
+      {lessons.length > 0 && (
+        <div style={{ marginBottom: 16 }}>
+          <div className="row between" style={{ marginBottom: 6 }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>
+              {passedIds.size} of {lessons.length} completed
+            </span>
+            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+              {Math.round((passedIds.size / lessons.length) * 100)}%
+            </span>
+          </div>
+          <div
+            style={{
+              height: 4,
+              background: 'var(--border-subtle)',
+              borderRadius: 999,
+              overflow: 'hidden',
+            }}
+          >
+            <div
+              style={{
+                height: '100%',
+                width: `${(passedIds.size / lessons.length) * 100}%`,
+                background: 'var(--green)',
+                transition: 'width 0.6s ease',
+              }}
+            />
+          </div>
+        </div>
       )}
 
       <div className="lesson-list">

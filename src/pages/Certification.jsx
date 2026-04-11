@@ -106,8 +106,11 @@ export default function Certification() {
 
   function checkReq(req) {
     const val = metrics[req.key] ?? 0
-    const threshold = req.key === 'lessonsPassed' && req.threshold === -1 ? totalLessons : req.threshold
-    return val >= threshold
+    if (req.key === 'lessonsPassed' && req.threshold === -1) {
+      if (totalLessons === 0) return false
+      return val >= totalLessons
+    }
+    return val >= req.threshold
   }
 
   function currentValue(req) {
@@ -130,6 +133,18 @@ export default function Certification() {
 
   const currentCert = CERT_LEVELS.filter((c) => reqProgress(c) === 100).length
 
+  const totalMetAll = CERT_LEVELS.reduce((acc, c) => acc + c.requirements.filter(checkReq).length, 0)
+  let motivational
+  if (totalMetAll === 0) {
+    motivational = 'Start your training journey below.'
+  } else if (currentCert === 3) {
+    motivational = "You're fully certified — legend status."
+  } else if (currentCert > 0) {
+    motivational = 'Great work! Push for the next tier.'
+  } else {
+    motivational = "You're making progress. Keep going."
+  }
+
   return (
     <div className="page cert-page">
       <div className="page-header">
@@ -144,6 +159,16 @@ export default function Certification() {
         <div className="stat"><div className="label"><span className="dot green" />Practice GPA</div><div className="value">{metrics.gpa.toFixed(1)}</div><div className="meta">{metrics.sessionCount} sessions</div></div>
         <div className="stat"><div className="label"><span className="dot amber" />Cert Level</div><div className="value">{currentCert}/3</div><div className="meta">{currentCert === 3 ? 'fully certified' : 'in progress'}</div></div>
       </motion.div>
+
+      <motion.p
+        className="text-muted"
+        style={{ textAlign: 'center', fontSize: 13, marginTop: 14, marginBottom: 0 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+      >
+        {motivational}
+      </motion.p>
 
       {/* Level cards */}
       <div className="cert-cards">

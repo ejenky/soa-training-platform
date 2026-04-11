@@ -100,12 +100,71 @@ export default function Practice() {
     navigate(`/practice/session?${params.toString()}`)
   }
 
+  function startQuickDrill() {
+    const ranked = CATEGORIES
+      .map((c) => ({ key: c.key, m: masteryByCat[c.key] }))
+      .filter((r) => (objectionCounts[r.key] || 0) > 0)
+    const sorted = ranked.sort((a, b) => {
+      const ap = a.m?.count > 0 ? a.m.pct : 101
+      const bp = b.m?.count > 0 ? b.m.pct : 101
+      return ap - bp
+    })
+    const target = sorted[0]?.key || CATEGORIES[0].key
+    const params = new URLSearchParams({
+      stage: 'intro_soa',
+      type: 'mixed',
+      difficulty: '2',
+      category: target,
+    })
+    navigate(`/practice/session?${params.toString()}`)
+  }
+
   return (
     <div className="page">
       <div className="page-header">
         <h1>Practice</h1>
         <p className="lede">Drill objections from real callers. Pick a category, dial in the difficulty, and go.</p>
       </div>
+
+      <motion.div
+        className="card quick-drill-card"
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        style={{
+          marginBottom: 16,
+          background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(16, 185, 129, 0.06))',
+          border: '1px solid rgba(37, 99, 235, 0.2)',
+        }}
+      >
+        <div className="row between" style={{ alignItems: 'center', gap: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 10,
+                background: 'rgba(37, 99, 235, 0.15)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <Timer size={22} weight="regular" style={{ color: 'var(--blue)' }} />
+            </div>
+            <div>
+              <h3 style={{ margin: 0, fontSize: 16 }}>Quick Drill</h3>
+              <p className="text-muted" style={{ margin: '2px 0 0', fontSize: 12 }}>
+                Auto-picks your weakest category at your current level
+              </p>
+            </div>
+          </div>
+          <button className="cta" onClick={startQuickDrill}>
+            Go <ArrowRight size={14} weight="regular" />
+          </button>
+        </div>
+      </motion.div>
 
       {dueCount > 0 && (
         <motion.div
