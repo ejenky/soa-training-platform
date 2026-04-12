@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'motion/react'
-import { Flame, Warning, MagnifyingGlass, ArrowRight, X, Export, Plus, Users, Notebook } from '@phosphor-icons/react'
+import { Flame, Warning, MagnifyingGlass, ArrowRight, X, Export, Plus, Users, Notebook, CheckSquare, CaretDown } from '@phosphor-icons/react'
 import { useAuth } from '../contexts/AuthContext'
 import { pb } from '../lib/pb'
-import { computeXP, computeStreak, levelFor, sessionsInLastDays } from '../lib/gamification'
+import { computeXP, computeStreak, levelFor, sessionsInLastDays, CATEGORIES } from '../lib/gamification'
 
 function initials(name, email) {
   const src = (name || email || '').trim()
@@ -68,6 +68,14 @@ export default function Supervisor() {
   // Print ref
   const printRef = useRef(null)
 
+  // Bulk selection
+  const [selected, setSelected] = useState(new Set())
+  const [showBulk, setShowBulk] = useState(false)
+  const bulkRef = useRef(null)
+
+  // Responses for category weakness
+  const [responses, setResponses] = useState([])
+
   useEffect(() => {
     let cancelled = false
     async function load() {
@@ -84,12 +92,18 @@ export default function Supervisor() {
         }
         let cs = []
         let ps = []
+        let rs = []
         if (ag.length > 0) {
           const ids = ag.map((a) => `agent_id = "${a.id}"`).join(' || ')
           ;[cs, ps] = await Promise.all([
             pb.collection('lesson_completions').getFullList({ filter: ids }).catch(() => []),
             pb.collection('practice_sessions').getFullList({ filter: ids, sort: '-created' }).catch(() => []),
           ])
+          // Fetch responses for category weakness (limit to recent sessions)
+          if (ps.length > 0) {
+            const sessionFilter = ps.slice(0, 100).map((p) => `session_id = "${p.id}"`).join(' || ')
+            rs = await pb.collection('session_responses').getFullList({ filter: sessionFilter, expand: 'objection_id' }).catch(() => [])
+          }
         }
         // Fetch content counts for summary card
         const [lessonList, objectionList, quizList, scenarioList] = await Promise.all([
@@ -102,6 +116,7 @@ export default function Supervisor() {
         setAgents(ag)
         setCompletions(cs)
         setSessions(ps)
+        setResponses(rs)
         setContentCounts({
           lessons: lessonList.length,
           objections: objectionList.length,
@@ -118,10 +133,11 @@ export default function Supervisor() {
     return () => { cancelled = true }
   }, [user?.id])
 
-  // Close export dropdown on outside click
+  // Close dropdowns on outside click
   useEffect(() => {
     function handle(e) {
       if (exportRef.current && !exportRef.current.contains(e.target)) setShowExport(false)
+      if (bulkRef.current && !bulkRef.current.contains(e.target)) setShowBulk(false)
     }
     document.addEventListener('mousedown', handle)
     return () => document.removeEventListener('mousedown', handle)
@@ -146,10 +162,32 @@ export default function Supervisor() {
       const flagged = (cs.length > 0 && quizAvg < 70) || recentSessions < 3
       const lastActive = ps[0]?.created || cs[0]?.completed_at || null
 
-      map[a.id] = { quizAvg, gpa, xp, level: lvl, streak, sessionCount: ps.length, flagged, certified: quizAvg >= 85 && gpa >= 3.0, lastActive }
+      // Category weakness: find lowest scoring category for this agent
+      const agentResponses = responses.filter((r) => {
+        const sessionId = r.session_id
+        return ps.some((p) => p.id === sessionId)
+      })
+      let weakCategory = null
+      if (agentResponses.length > 0) {
+        const catScores = {}
+        for (const r of agentResponses) {
+          const cat = r.expand?.objection_id?.category
+          if (!cat) continue
+          if (!catScores[cat]) catScores[cat] = { total: 0, max: 0 }
+          catScores[cat].total += r.score || 0
+          catScores[cat].max += r.max_score || 0
+        }
+        let lowest = Infinity
+        for (const [cat, v] of Object.entries(catScores)) {
+          const pct = v.max > 0 ? (v.total / v.max) * 100 : 100
+          if (pct < lowest) { lowest = pct; weakCategory = { name: cat, pct: Math.round(pct) } }
+        }
+      }
+
+      map[a.id] = { quizAvg, gpa, xp, level: lvl, streak, sessionCount: ps.length, flagged, certified: quizAvg >= 85 && gpa >= 3.0, lastActive, weakCategory }
     }
     return map
-  }, [agents, completions, sessions])
+  }, [agents, completions, sessions, responses])
 
   const teamStats = useMemo(() => {
     const metrics = Object.values(agentMetrics)
@@ -265,6 +303,52 @@ export default function Supervisor() {
     setTimeout(() => window.print(), 100)
   }
 
+  // ── Bulk selection helpers ──
+  function toggleSelect(agentId) {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(agentId)) next.delete(agentId)
+      else next.add(agentId)
+      return next
+    })
+  }
+
+  function toggleSelectAll() {
+    if (selected.size === filtered.length) setSelected(new Set())
+    else setSelected(new Set(filtered.map((a) => a.id)))
+  }
+
+  function bulkExportCSV() {
+    const sel = filtered.filter((a) => selected.has(a.id))
+    if (sel.length === 0) return
+    const header = ['Name', 'Email', 'Level', 'Quiz Avg', 'Practice GPA', 'Sessions', 'Streak', 'Last Active', 'Status']
+    const rows = sel.map((a) => {
+      const m = agentMetrics[a.id] || {}
+      return [a.name || '', a.email || '', m.level?.name || 'Trainee', `${m.quizAvg || 0}%`, m.gpa?.toFixed?.(1) ?? '0.0', String(m.sessionCount || 0), String(m.streak || 0), m.lastActive ? new Date(m.lastActive).toLocaleDateString() : '', a.status || 'active']
+    })
+    const csv = [header, ...rows].map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(',')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `hia-selected-agents-${new Date().toISOString().split('T')[0]}.csv`
+    link.click()
+    URL.revokeObjectURL(url)
+    setShowBulk(false)
+  }
+
+  async function bulkChangeStatus(newStatus) {
+    const ids = [...selected]
+    for (const id of ids) {
+      try {
+        await pb.collection('users').update(id, { status: newStatus })
+        setAgents((prev) => prev.map((a) => a.id === id ? { ...a, status: newStatus } : a))
+      } catch (e) { console.error(e) }
+    }
+    setSelected(new Set())
+    setShowBulk(false)
+  }
+
   if (loading) return <div className="page"><div className="loader">Loading team…</div></div>
 
   return (
@@ -307,9 +391,24 @@ export default function Supervisor() {
           <option value="streak">Streak</option>
         </select>
         <div className="sv-btn-group">
+          {selected.size > 0 && (
+            <div className="sv-export-wrap" ref={bulkRef}>
+              <button className="sv-export-btn" onClick={() => setShowBulk((v) => !v)}>
+                <CheckSquare size={14} /> Bulk ({selected.size}) <CaretDown size={10} />
+              </button>
+              {showBulk && (
+                <div className="sv-export-dropdown">
+                  <button onClick={bulkExportCSV}>Export Selected</button>
+                  <button onClick={() => bulkChangeStatus('active')}>Set Active</button>
+                  <button onClick={() => bulkChangeStatus('inactive')}>Set Inactive</button>
+                  <button onClick={() => bulkChangeStatus('suspended')}>Suspend</button>
+                </div>
+              )}
+            </div>
+          )}
           <div className="sv-export-wrap" ref={exportRef}>
             <button className="sv-export-btn" onClick={() => setShowExport((v) => !v)}>
-              <Export size={14} /> Export
+              <Export size={14} /> Export <CaretDown size={10} />
             </button>
             {showExport && (
               <div className="sv-export-dropdown">
@@ -341,10 +440,14 @@ export default function Supervisor() {
             <table className="sv-table" ref={printRef}>
               <thead>
                 <tr>
+                  <th className="no-print" style={{ width: 32 }}>
+                    <input type="checkbox" checked={selected.size === filtered.length && filtered.length > 0} onChange={toggleSelectAll} style={{ accentColor: 'var(--green)' }} />
+                  </th>
                   <th>Agent</th>
                   <th>Level</th>
                   <th>Quiz Avg</th>
                   <th>GPA</th>
+                  <th>Weakness</th>
                   <th>Sessions</th>
                   <th>Streak</th>
                   <th>Last Active</th>
@@ -359,6 +462,9 @@ export default function Supervisor() {
                   const status = a.status || 'active'
                   return (
                     <motion.tr key={a.id} custom={i} variants={stagger} initial="hidden" animate="visible" className="sv-row" onClick={() => navigate(`/supervisor/agent/${a.id}`)}>
+                      <td className="no-print" style={{ width: 32 }} onClick={(e) => e.stopPropagation()}>
+                        <input type="checkbox" checked={selected.has(a.id)} onChange={() => toggleSelect(a.id)} style={{ accentColor: 'var(--green)' }} />
+                      </td>
                       <td>
                         <div className="sv-agent-cell">
                           <div className="sv-avatar">{initials(a.name, a.email)}</div>
@@ -371,6 +477,15 @@ export default function Supervisor() {
                       <td><span className="sv-level-badge" style={{ color: m.level?.color, borderColor: m.level?.color }}>{m.level?.name || 'Trainee'}</span></td>
                       <td><span className={`badge ${quizTone(m.quizAvg || 0)}`}>{m.quizAvg || 0}%</span></td>
                       <td><span className={`badge ${gpaTone(m.gpa || 0)}`}>{m.gpa?.toFixed?.(1) ?? '0.0'}</span></td>
+                      <td>
+                        {m.weakCategory ? (
+                          <span style={{ fontSize: 11, fontWeight: 500, color: m.weakCategory.pct < 50 ? 'var(--error)' : m.weakCategory.pct < 85 ? 'var(--warn)' : 'var(--text-muted)' }}>
+                            {m.weakCategory.name} ({m.weakCategory.pct}%)
+                          </span>
+                        ) : (
+                          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>--</span>
+                        )}
+                      </td>
                       <td className="text-mono">{m.sessionCount || 0}</td>
                       <td><span className="sv-streak">{m.streak > 0 && <Flame size={12} weight="fill" color="var(--warn)" />}{m.streak || 0}</span></td>
                       <td className="sv-last-active">{timeAgo(m.lastActive)}</td>

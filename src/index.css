@@ -3024,6 +3024,9 @@ tbody tr:hover td { background: var(--row-hover); }
   flex-shrink: 0;
 }
 .cm-correct-btn.active { border-color: var(--green); background: var(--green); color: #fff; }
+.cm-md-preview p { margin: 0 0 0.5em; }
+.cm-md-preview ul { margin: 0 0 0.5em; padding-left: 1.5em; }
+.cm-md-preview li { margin-bottom: 2px; }
 
 /* Shared form grid */
 .form-grid {

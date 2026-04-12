@@ -1,14 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'motion/react'
-import { ArrowLeft, ArrowRight, Warning, X } from '@phosphor-icons/react'
+import { ArrowLeft, ArrowRight, X } from '@phosphor-icons/react'
 import { pb } from '../lib/pb'
 import {
   computeXP,
   computeStreak,
   levelFor,
   categoryMastery,
-  CATEGORIES,
 } from '../lib/gamification'
 import { fetchAllReviews, isDueForReview } from '../lib/spacedRepetition'
 
@@ -20,9 +19,9 @@ function initials(name, email) {
   return src.slice(0, 2).toUpperCase()
 }
 
-function tone(p) { return p >= 85 ? 'good' : p >= 60 ? 'ok' : 'bad' }
 function quizTone(v) { return v >= 85 ? 'success' : v >= 60 ? 'warn' : 'danger' }
 function gpaTone(v) { return v >= 3.0 ? 'success' : v >= 2.0 ? 'warn' : 'danger' }
+function masteryTone(p) { return p >= 85 ? 'var(--green)' : p >= 50 ? 'var(--warn)' : 'var(--error)' }
 
 const STAGE_LABELS = {
   intro_soa: 'Intro / SOA',
@@ -37,9 +36,43 @@ const TYPE_LABELS = {
 }
 
 function formatDate(d) {
-  return new Date(d).toLocaleDateString('en-US', {
-    month: 'short', day: 'numeric', year: 'numeric',
-  })
+  return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+function timeAgo(d) {
+  if (!d) return 'Never'
+  const ms = Date.now() - new Date(d).getTime()
+  const m = Math.floor(ms / 60000)
+  if (m < 1) return 'just now'
+  if (m < 60) return `${m}m ago`
+  const h = Math.floor(m / 60)
+  if (h < 24) return `${h}h ago`
+  const days = Math.floor(h / 24)
+  if (days === 1) return 'Yesterday'
+  if (days < 30) return `${days} days ago`
+  return formatDate(d)
+}
+
+// Sparkline SVG
+function Sparkline({ data, width = 200, height = 40 }) {
+  if (data.length < 2) return null
+  const max = Math.max(...data, 100)
+  const min = Math.min(...data, 0)
+  const range = max - min || 1
+  const points = data.map((v, i) => {
+    const x = (i / (data.length - 1)) * width
+    const y = height - ((v - min) / range) * (height - 4) - 2
+    return `${x},${y}`
+  }).join(' ')
+  const last = data[data.length - 1]
+  const lastX = width
+  const lastY = height - ((last - min) / range) * (height - 4) - 2
+  return (
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} style={{ display: 'block' }}>
+      <polyline points={points} fill="none" stroke="var(--green)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx={lastX} cy={lastY} r="3" fill="var(--green)" />
+    </svg>
+  )
 }
 
 export default function SupervisorAgent() {
@@ -64,9 +97,9 @@ export default function SupervisorAgent() {
       try {
         const [a, cs, ps, ls] = await Promise.all([
           pb.collection('users').getOne(id),
-          pb.collection('lesson_completions').getFullList({ filter: `agent_id = "${id}"`, sort: '-completed_at' }),
-          pb.collection('practice_sessions').getFullList({ filter: `agent_id = "${id}"`, sort: '-created' }),
-          pb.collection('lessons').getFullList({ filter: 'active = true' }),
+          pb.collection('lesson_completions').getFullList({ filter: `agent_id = "${id}"`, sort: '-completed_at' }).catch(() => []),
+          pb.collection('practice_sessions').getFullList({ filter: `agent_id = "${id}"`, sort: '-created' }).catch(() => []),
+          pb.collection('lessons').getFullList({ filter: 'active = true', sort: 'week_number,order_index' }).catch(() => []),
         ])
 
         let rs = []
@@ -75,7 +108,7 @@ export default function SupervisorAgent() {
           rs = await pb.collection('session_responses').getFullList({ filter, expand: 'objection_id' }).catch(() => [])
         }
 
-        const rq = await fetchAllReviews(pb, id)
+        const rq = await fetchAllReviews(pb, id).catch(() => [])
 
         if (cancelled) return
         setAgent(a)
@@ -105,19 +138,34 @@ export default function SupervisorAgent() {
     const lvl = levelFor(xp)
     const streak = computeStreak(sessions, completions)
     const certified = quizAvg >= 85 && gpa >= 3.0
-    return { quizAvg, gpa, xp, lvl, streak, certified, sessionCount: sessions.length }
+    const lastActive = sessions[0]?.created || completions[0]?.completed_at || null
+    return { quizAvg, gpa, xp, lvl, streak, certified, sessionCount: sessions.length, lastActive }
   }, [completions, sessions, responses])
 
   const mastery = useMemo(() => categoryMastery(responses), [responses])
-  const sortedMastery = useMemo(() => [...mastery].filter((m) => m.count > 0).sort((a, b) => a.pct - b.pct), [mastery])
+
+  const trendData = useMemo(() => {
+    return sessions.slice(0, 20).reverse().map((s) =>
+      s.max_score > 0 ? Math.round((s.total_score / s.max_score) * 100) : 0
+    )
+  }, [sessions])
+
+  const lessonMap = useMemo(() => Object.fromEntries(lessons.map((l) => [l.id, l])), [lessons])
+  const completionsByLesson = useMemo(() => {
+    const map = {}
+    for (const c of completions) {
+      if (!map[c.lesson_id] || c.quiz_score > (map[c.lesson_id].quiz_score || 0)) {
+        map[c.lesson_id] = c
+      }
+    }
+    return map
+  }, [completions])
 
   const reviewStats = useMemo(() => {
     const total = reviewQueue.length
     const dueToday = reviewQueue.filter(isDueForReview).length
     return { total, dueToday }
   }, [reviewQueue])
-
-  const lessonMap = useMemo(() => Object.fromEntries(lessons.map((l) => [l.id, l])), [lessons])
 
   async function handleStatusChange(newStatus) {
     setStatusSaving(true)
@@ -156,21 +204,19 @@ export default function SupervisorAgent() {
     }
   }
 
-  if (loading) return <div className="page"><div className="loader">Loading agent…</div></div>
+  if (loading) return <div className="page"><div className="loader">Loading agent...</div></div>
   if (!agent) return <div className="page"><div className="card empty-state"><p>Agent not found.</p></div></div>
 
   const memberSince = agent.created
     ? new Date(agent.created).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
-    : '—'
+    : '--'
   const status = agent.status || 'active'
 
   return (
     <div className="page sa-page">
-      {/* Breadcrumb */}
+      {/* Back link */}
       <div className="sa-breadcrumb">
-        <Link to="/supervisor"><ArrowLeft size={14} /> Team</Link>
-        <span className="sa-breadcrumb-sep">/</span>
-        <span>{agent.name || agent.email}</span>
+        <Link to="/supervisor"><ArrowLeft size={14} /> Back to Team</Link>
       </div>
 
       {/* Agent info card */}
@@ -187,18 +233,22 @@ export default function SupervisorAgent() {
             <div className="sa-email">{agent.email}</div>
             <div className="sa-meta-badges">
               <span className="badge info">{agent.role || 'agent'}</span>
-              <span className="sv-level-badge" style={{ color: stats.lvl.color, borderColor: stats.lvl.color }}>
-                {stats.lvl.name}
-              </span>
               <span className={`sv-status-dot ${status}`} />
+              <span className="badge" style={{ textTransform: 'capitalize' }}>{status}</span>
               <span className="sa-member-since">Member since {memberSince}</span>
+              <span className="sa-member-since">Last active: {timeAgo(stats.lastActive)}</span>
             </div>
           </div>
         </div>
-        {stats.certified && <span className="badge success">Certified</span>}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span className="sv-level-badge" style={{ color: stats.lvl.color, borderColor: stats.lvl.color }}>
+            {stats.lvl.name}
+          </span>
+          {stats.certified && <span className="badge success">Certified</span>}
+        </div>
       </motion.div>
 
-      {/* Stats strip */}
+      {/* Quick stats */}
       <motion.div
         className="stats-strip"
         initial={{ opacity: 0, y: 12 }}
@@ -216,9 +266,9 @@ export default function SupervisorAgent() {
           <div className="meta">{stats.gpa >= 3.0 ? 'cert ready' : 'need 3.0+'}</div>
         </div>
         <div className="stat">
-          <div className="label"><span className="dot green" />Total XP</div>
-          <div className="value">{stats.xp.toLocaleString()}</div>
-          <div className="meta">{stats.lvl.name}</div>
+          <div className="label"><span className="dot blue" />Sessions</div>
+          <div className="value">{stats.sessionCount}</div>
+          <div className="meta">total practice</div>
         </div>
         <div className="stat">
           <div className="label"><span className="dot amber" />Streak</div>
@@ -226,18 +276,47 @@ export default function SupervisorAgent() {
           <div className="meta">{stats.streak > 0 ? 'days' : 'inactive'}</div>
         </div>
         <div className="stat">
-          <div className="label"><span className="dot blue" />Sessions</div>
-          <div className="value">{stats.sessionCount}</div>
-          <div className="meta">practice drills</div>
-        </div>
-        <div className="stat">
-          <div className="label"><span className="dot green" />Cert Level</div>
-          <div className="value">{agent.certification_level || 0}</div>
-          <div className="meta">{stats.certified ? 'certified' : 'in progress'}</div>
+          <div className="label"><span className="dot green" />XP</div>
+          <div className="value">{stats.xp.toLocaleString()}</div>
+          <div className="meta">{stats.lvl.name}</div>
         </div>
       </motion.div>
 
-      {/* Weak Spots */}
+      {/* Certification Progress */}
+      <motion.div
+        className="card"
+        style={{ marginTop: 18 }}
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.08 }}
+      >
+        <h2>Certification Progress</h2>
+        <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', marginTop: 8 }}>
+          <div style={{ flex: 1, minWidth: 180 }}>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>
+              Level: <strong style={{ color: stats.lvl.color }}>{stats.lvl.name}</strong>
+              {stats.lvl.xpToNext > 0 && <span> — {stats.lvl.xpToNext.toLocaleString()} XP to {stats.lvl.nextName}</span>}
+            </div>
+            <div style={{ height: 8, borderRadius: 4, background: 'var(--surface)', overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: `${Math.round(stats.lvl.progress * 100)}%`, background: stats.lvl.color, borderRadius: 4, transition: 'width 0.4s' }} />
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 16, fontSize: 12 }}>
+            <div>
+              <span style={{ color: 'var(--text-muted)' }}>Quiz:</span>{' '}
+              <span className={`badge ${quizTone(stats.quizAvg)}`}>{stats.quizAvg}%</span>
+              <span style={{ color: 'var(--text-muted)' }}> / 85%</span>
+            </div>
+            <div>
+              <span style={{ color: 'var(--text-muted)' }}>GPA:</span>{' '}
+              <span className={`badge ${gpaTone(stats.gpa)}`}>{stats.gpa.toFixed(1)}</span>
+              <span style={{ color: 'var(--text-muted)' }}> / 3.0</span>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Category Mastery */}
       <motion.div
         className="card"
         style={{ marginTop: 18 }}
@@ -245,21 +324,52 @@ export default function SupervisorAgent() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.1 }}
       >
-        <h2>Weak Spots</h2>
-        {sortedMastery.length === 0 ? (
+        <h2>Category Mastery</h2>
+        {mastery.every((m) => m.count === 0) ? (
           <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>No graded responses yet.</p>
         ) : (
-          <div className="bars">
-            {sortedMastery.slice(0, 8).map((m) => (
-              <div key={m.key} className="bar-row">
-                <div className="label">{m.key}</div>
-                <div className="track"><div className={`fill ${tone(m.pct)}`} style={{ width: `${m.pct}%` }} /></div>
-                <div className={`pct ${tone(m.pct)}`}>{m.pct}%</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 8 }}>
+            {mastery.map((m) => (
+              <div key={m.key} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ width: 80, fontSize: 12, fontWeight: 500, color: 'var(--text)', flexShrink: 0 }}>{m.key}</div>
+                <div style={{ flex: 1, height: 10, borderRadius: 5, background: 'var(--surface)', overflow: 'hidden' }}>
+                  <div style={{
+                    height: '100%',
+                    width: `${m.pct}%`,
+                    background: masteryTone(m.pct),
+                    borderRadius: 5,
+                    transition: 'width 0.4s',
+                    minWidth: m.count > 0 ? 4 : 0,
+                  }} />
+                </div>
+                <div style={{ width: 50, textAlign: 'right', fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-mono)', color: masteryTone(m.pct) }}>
+                  {m.count > 0 ? `${m.pct}%` : '--'}
+                </div>
+                <div style={{ width: 50, fontSize: 11, color: 'var(--text-muted)' }}>
+                  {m.count > 0 ? `${m.count} drills` : 'none'}
+                </div>
               </div>
             ))}
           </div>
         )}
       </motion.div>
+
+      {/* Performance Trend */}
+      {trendData.length >= 2 && (
+        <motion.div
+          className="card"
+          style={{ marginTop: 18 }}
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.12 }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <h2>Performance Trend</h2>
+            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Last {trendData.length} sessions</span>
+          </div>
+          <Sparkline data={trendData} width={Math.min(600, trendData.length * 30)} height={48} />
+        </motion.div>
+      )}
 
       {/* Recent Sessions */}
       <motion.div
@@ -311,7 +421,7 @@ export default function SupervisorAgent() {
         )}
       </motion.div>
 
-      {/* Lesson Progress */}
+      {/* Lesson Progress — all lessons */}
       <motion.div
         className="card"
         style={{ marginTop: 18 }}
@@ -320,30 +430,43 @@ export default function SupervisorAgent() {
         transition={{ duration: 0.4, delay: 0.2 }}
       >
         <h2>Lesson Progress</h2>
-        {completions.length === 0 ? (
-          <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>No lessons attempted.</p>
+        {lessons.length === 0 ? (
+          <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>No lessons configured.</p>
         ) : (
           <div className="table-wrap">
             <table>
               <thead>
                 <tr>
                   <th>Lesson</th>
+                  <th>Week</th>
                   <th>Score</th>
                   <th>Attempts</th>
-                  <th>Result</th>
+                  <th>Status</th>
                   <th>Date</th>
                 </tr>
               </thead>
               <tbody>
-                {completions.map((c) => (
-                  <tr key={c.id}>
-                    <td>{lessonMap[c.lesson_id]?.title || c.lesson_id}</td>
-                    <td><span className={`badge ${quizTone(c.quiz_score || 0)}`}>{c.quiz_score}%</span></td>
-                    <td className="text-mono">{c.attempts}</td>
-                    <td><span className={`badge ${c.passed ? 'success' : 'warn'}`}>{c.passed ? 'Passed' : 'Retry'}</span></td>
-                    <td className="nowrap">{c.completed_at ? formatDate(c.completed_at) : '—'}</td>
-                  </tr>
-                ))}
+                {lessons.map((l) => {
+                  const c = completionsByLesson[l.id]
+                  return (
+                    <tr key={l.id}>
+                      <td>{l.title}</td>
+                      <td className="text-mono">{l.week_number}</td>
+                      <td>
+                        {c ? <span className={`badge ${quizTone(c.quiz_score || 0)}`}>{c.quiz_score}%</span> : <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>--</span>}
+                      </td>
+                      <td className="text-mono">{c ? c.attempts : '--'}</td>
+                      <td>
+                        {c ? (
+                          <span className={`badge ${c.passed ? 'success' : 'warn'}`}>{c.passed ? 'Passed' : 'Failed'}</span>
+                        ) : (
+                          <span className="badge" style={{ color: 'var(--text-muted)', borderColor: 'var(--border-subtle)' }}>Not Started</span>
+                        )}
+                      </td>
+                      <td className="nowrap">{c?.completed_at ? formatDate(c.completed_at) : '--'}</td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
@@ -430,7 +553,7 @@ export default function SupervisorAgent() {
                 <div className="modal-actions">
                   <button onClick={() => setShowRemoveConfirm(false)}>Cancel</button>
                   <button className="outline-red" onClick={handleRemoveAgent} disabled={removing}>
-                    {removing ? 'Removing…' : 'Confirm Remove'}
+                    {removing ? 'Removing...' : 'Confirm Remove'}
                   </button>
                 </div>
               </div>

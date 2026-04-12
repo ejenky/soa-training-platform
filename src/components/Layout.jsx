@@ -183,26 +183,6 @@ export default function Layout() {
       <aside className={`sidebar ${open ? 'open' : ''}`}>
         <Brand />
 
-        <div className="sidebar-section">
-          <div className="section-label">Workspace</div>
-          <nav className="sidebar-nav">
-            {agentNav.map((l) => (
-              <NavLink
-                key={l.to}
-                to={l.to}
-                end
-                onClick={() => setOpen(false)}
-                className={({ isActive }) => (isActive ? 'active' : '')}
-              >
-                <span className="nav-icon"><l.Icon size={16} weight="regular" /></span>
-                <span className="nav-label">{l.label}</span>
-                {l.meta && <span className="nav-meta">{l.meta}</span>}
-                {l.dot && <span className="green-dot" />}
-              </NavLink>
-            ))}
-          </nav>
-        </div>
-
         {isSupervisor && (
           <div className="sidebar-section">
             <div className="section-label">Supervisor</div>
@@ -225,6 +205,26 @@ export default function Layout() {
             </nav>
           </div>
         )}
+
+        <div className="sidebar-section">
+          <div className="section-label">{isSupervisor ? 'Agent Tools' : 'Workspace'}</div>
+          <nav className="sidebar-nav">
+            {agentNav.map((l) => (
+              <NavLink
+                key={l.to}
+                to={l.to}
+                end
+                onClick={() => setOpen(false)}
+                className={({ isActive }) => (isActive ? 'active' : '')}
+              >
+                <span className="nav-icon"><l.Icon size={16} weight="regular" /></span>
+                <span className="nav-label">{l.label}</span>
+                {l.meta && <span className="nav-meta">{l.meta}</span>}
+                {l.dot && <span className="green-dot" />}
+              </NavLink>
+            ))}
+          </nav>
+        </div>
 
         <div className="sidebar-section sidebar-profile-section">
           <nav className="sidebar-nav">
@@ -315,7 +315,10 @@ export default function Layout() {
 
       {!immersive && (
         <nav className="bottom-tabs">
-          {agentNav.slice(0, 6).map((l) => (
+          {(isSupervisor
+            ? [...supervisorNav.slice(0, 3), ...agentNav.slice(1, 4)]
+            : agentNav.slice(0, 6)
+          ).map((l) => (
             <NavLink key={l.to} to={l.to} end className={({ isActive }) => (isActive ? 'active' : '')}>
               <l.Icon size={18} weight="regular" />
               <span>{l.label}</span>

@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
+import Papa from 'papaparse'
 import {
   Plus, PencilSimple, Trash, MagnifyingGlass, X, Check,
-  ArrowUp, ArrowDown, ListBullets, ArrowLeft,
+  ArrowUp, ArrowDown, ListBullets, ArrowLeft, UploadSimple, DownloadSimple,
+  Eye, EyeSlash, TextB, TextItalic,
 } from '@phosphor-icons/react'
 import { useAuth } from '../contexts/AuthContext'
 import { pb } from '../lib/pb'
@@ -92,6 +94,15 @@ export default function ContentManager() {
   // Objection filters
   const [objSearch, setObjSearch] = useState('')
   const [objCatFilter, setObjCatFilter] = useState('all')
+
+  // CSV Import
+  const [showImport, setShowImport] = useState(false)
+  const [csvRows, setCsvRows] = useState([])
+  const [csvErrors, setCsvErrors] = useState([])
+  const [importing, setImporting] = useState(false)
+  const [importProgress, setImportProgress] = useState({ current: 0, total: 0 })
+  const [importResult, setImportResult] = useState(null)
+  const csvInputRef = useRef(null)
 
   useEffect(() => {
     let cancelled = false
@@ -266,6 +277,86 @@ export default function ContentManager() {
     return true
   })
 
+  // ── CSV Import ──
+  const VALID_CATEGORIES = CATEGORIES.map((c) => c.key)
+  const VALID_STAGES = CALL_STAGES.map((s) => s.value)
+  const VALID_SOURCES = ['field', 'written', 'generated']
+
+  function handleCsvFile(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete(results) {
+        const rows = []
+        const errors = []
+        results.data.forEach((row, i) => {
+          const r = {
+            text: (row.text || '').trim(),
+            category: (row.category || '').trim(),
+            difficulty: parseInt(row.difficulty, 10) || 1,
+            call_stage: (row.call_stage || '').trim(),
+            source: (row.source || 'written').trim(),
+          }
+          const rowErrors = []
+          if (!r.text) rowErrors.push('text is required')
+          if (!VALID_CATEGORIES.includes(r.category)) rowErrors.push(`invalid category "${r.category}"`)
+          if (r.difficulty < 1 || r.difficulty > 4) rowErrors.push('difficulty must be 1-4')
+          if (!VALID_STAGES.includes(r.call_stage)) rowErrors.push(`invalid call_stage "${r.call_stage}"`)
+          if (!VALID_SOURCES.includes(r.source)) rowErrors.push(`invalid source "${r.source}"`)
+          rows.push({ ...r, _row: i + 2, _errors: rowErrors })
+          if (rowErrors.length > 0) errors.push({ row: i + 2, errors: rowErrors })
+        })
+        setCsvRows(rows)
+        setCsvErrors(errors)
+        setImportResult(null)
+      },
+    })
+  }
+
+  function downloadCsvTemplate() {
+    const csv = `text,category,difficulty,call_stage,source\n"I was told I'd get a free food card just for calling",Intro/SOA,2,intro_soa,written\n"I don't need Medicare, I already have insurance",No Value,3,intro_soa,field`
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = 'objections-template.csv'
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+
+  async function handleCsvImport() {
+    const valid = csvRows.filter((r) => r._errors.length === 0)
+    if (valid.length === 0) return
+    setImporting(true)
+    setImportProgress({ current: 0, total: valid.length })
+    const successes = []
+    const failures = []
+    for (let i = 0; i < valid.length; i++) {
+      setImportProgress({ current: i + 1, total: valid.length })
+      try {
+        const { _row, _errors, ...data } = valid[i]
+        const created = await pb.collection('objections').create({ ...data, active: true })
+        successes.push(created)
+      } catch (e) {
+        failures.push({ row: valid[i]._row, error: e?.message || 'Failed to create' })
+      }
+    }
+    setObjections((prev) => [...successes, ...prev])
+    setImportResult({ success: successes.length, failed: failures.length, failures })
+    setImporting(false)
+  }
+
+  function closeImportModal() {
+    setShowImport(false)
+    setCsvRows([])
+    setCsvErrors([])
+    setImportResult(null)
+    setImporting(false)
+    if (csvInputRef.current) csvInputRef.current.value = ''
+  }
+
   if (loading) return <div className="page"><div className="loader">Loading content…</div></div>
 
   return (
@@ -304,9 +395,16 @@ export default function ContentManager() {
             <ArrowLeft size={14} /> Back to Scenarios
           </button>
         ) : (
-          <button className="sv-add-btn" style={{ marginLeft: 'auto' }} onClick={() => setEditItem({})}>
-            <Plus size={14} weight="bold" /> Add {tab === 3 ? 'Roleplay' : TABS[tab].replace(/s$/, '')}
-          </button>
+          <div style={{ display: 'flex', gap: 8, marginLeft: 'auto' }}>
+            {tab === 1 && (
+              <button className="sv-add-btn" style={{ background: 'transparent', borderColor: 'var(--border-subtle)' }} onClick={() => setShowImport(true)}>
+                <UploadSimple size={14} weight="bold" /> Import CSV
+              </button>
+            )}
+            <button className="sv-add-btn" onClick={() => setEditItem({})}>
+              <Plus size={14} weight="bold" /> Add {tab === 3 ? 'Roleplay' : TABS[tab].replace(/s$/, '')}
+            </button>
+          </div>
         )}
       </div>
 
@@ -393,7 +491,14 @@ export default function ContentManager() {
       {/* ── LESSON MODAL ── */}
       {tab === 0 && editItem !== null && (
         <Modal title={editItem.id ? 'Edit Lesson' : 'Add Lesson'} open onClose={() => setEditItem(null)}>
-          <LessonForm initial={editItem} saving={saving} onSave={saveLesson} onCancel={() => setEditItem(null)} />
+          <LessonForm
+            initial={editItem}
+            saving={saving}
+            onSave={saveLesson}
+            onCancel={() => setEditItem(null)}
+            quizzes={quizzes}
+            onGoToQuizTab={(lessonId) => { setEditItem(null); setTab(2) }}
+          />
         </Modal>
       )}
 
@@ -490,6 +595,98 @@ export default function ContentManager() {
         </Modal>
       )}
 
+      {/* ── CSV IMPORT MODAL ── */}
+      <Modal title="Import Objections from CSV" open={showImport} onClose={closeImportModal}>
+        {importResult ? (
+          <div>
+            <div className={`badge ${importResult.failed === 0 ? 'success' : 'warn'}`} style={{ fontSize: 14, padding: '8px 14px', marginBottom: 12 }}>
+              Successfully imported {importResult.success} objection{importResult.success !== 1 ? 's' : ''}.
+              {importResult.failed > 0 && ` ${importResult.failed} failed.`}
+            </div>
+            {importResult.failures.length > 0 && (
+              <div style={{ fontSize: 12, color: 'var(--error)', marginBottom: 12 }}>
+                {importResult.failures.map((f, i) => (
+                  <div key={i}>Row {f.row}: {f.error}</div>
+                ))}
+              </div>
+            )}
+            <button className="primary" onClick={closeImportModal} style={{ width: '100%' }}>Done</button>
+          </div>
+        ) : (
+          <div>
+            <p style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 12, lineHeight: 1.5 }}>
+              CSV should have columns: <strong>text, category, difficulty, call_stage, source</strong>.<br />
+              Category must be one of: Intro/SOA, RWB Card, SEP, No Value.<br />
+              Difficulty: 1-4. Call stage: intro_soa, qualifying, presenting, closing.<br />
+              Source: field, written, generated.
+            </p>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+              <label className="sv-add-btn" style={{ cursor: 'pointer', background: 'transparent', borderColor: 'var(--border-subtle)' }}>
+                <UploadSimple size={14} /> Choose CSV File
+                <input ref={csvInputRef} type="file" accept=".csv" onChange={handleCsvFile} style={{ display: 'none' }} />
+              </label>
+              <button style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--text-muted)' }} onClick={downloadCsvTemplate}>
+                <DownloadSimple size={14} /> Download Template
+              </button>
+            </div>
+
+            {csvRows.length > 0 && (
+              <>
+                <div style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 8 }}>
+                  {csvRows.length} row{csvRows.length !== 1 ? 's' : ''} parsed
+                  {csvErrors.length > 0 && <span style={{ color: 'var(--error)' }}> ({csvErrors.length} with errors)</span>}
+                </div>
+                <div className="table-wrap" style={{ maxHeight: 260, overflowY: 'auto', marginBottom: 14 }}>
+                  <table style={{ fontSize: 11, width: '100%' }}>
+                    <thead>
+                      <tr>
+                        <th style={{ width: 36 }}>#</th>
+                        <th>Text</th>
+                        <th>Category</th>
+                        <th>Diff</th>
+                        <th>Stage</th>
+                        <th>Source</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {csvRows.map((r, i) => (
+                        <tr key={i} style={r._errors.length > 0 ? { background: 'rgba(239,68,68,0.06)' } : {}}>
+                          <td>{r._row}</td>
+                          <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.text?.slice(0, 60)}</td>
+                          <td>{r.category}</td>
+                          <td>{r.difficulty}</td>
+                          <td>{r.call_stage}</td>
+                          <td>{r.source}</td>
+                          <td>{r._errors.length > 0
+                            ? <span className="badge danger" title={r._errors.join(', ')} style={{ fontSize: 10 }}>Error</span>
+                            : <span className="badge success" style={{ fontSize: 10 }}>OK</span>}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {importing ? (
+                  <div style={{ fontSize: 13, color: 'var(--text-dim)', textAlign: 'center', padding: '10px 0' }}>
+                    Importing {importProgress.current} of {importProgress.total}...
+                  </div>
+                ) : (
+                  <button
+                    className="primary"
+                    style={{ width: '100%' }}
+                    onClick={handleCsvImport}
+                    disabled={csvRows.filter((r) => r._errors.length === 0).length === 0}
+                  >
+                    Import {csvRows.filter((r) => r._errors.length === 0).length} Objection{csvRows.filter((r) => r._errors.length === 0).length !== 1 ? 's' : ''}
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+        )}
+      </Modal>
+
       <ConfirmDialog
         open={!!deleteTarget}
         message={tab === 3 ? 'Delete this roleplay and all its lines? This cannot be undone.' : `Delete this ${TABS[tab].replace(/s$/, '').toLowerCase()}? This cannot be undone.`}
@@ -503,7 +700,44 @@ export default function ContentManager() {
 
 // ── Form Components ──
 
-function LessonForm({ initial, saving, onSave, onCancel }) {
+function parseVideoEmbed(url) {
+  if (!url) return null
+  // YouTube
+  const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/)
+  if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}`
+  // Vimeo
+  const vimeoMatch = url.match(/vimeo\.com\/(\d+)/)
+  if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}`
+  return null
+}
+
+// Simple markdown-to-html: bold, italic, bullets
+function renderMarkdown(text) {
+  if (!text) return ''
+  let html = text
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/_(.+?)_/g, '<em>$1</em>')
+  // Bullet lists
+  const lines = html.split('\n')
+  let inList = false
+  const out = []
+  for (const line of lines) {
+    const bullet = line.match(/^[-*]\s+(.+)/)
+    if (bullet) {
+      if (!inList) { out.push('<ul>'); inList = true }
+      out.push(`<li>${bullet[1]}</li>`)
+    } else {
+      if (inList) { out.push('</ul>'); inList = false }
+      out.push(line ? `<p>${line}</p>` : '')
+    }
+  }
+  if (inList) out.push('</ul>')
+  return out.join('\n')
+}
+
+function LessonForm({ initial, saving, onSave, onCancel, quizzes = [], onGoToQuizTab }) {
   const [f, setF] = useState({
     title: initial.title || '',
     week_number: initial.week_number || 1,
@@ -515,6 +749,33 @@ function LessonForm({ initial, saving, onSave, onCancel }) {
     active: initial.active ?? true,
     ...(initial.id ? { id: initial.id } : {}),
   })
+
+  // Content type: derive from existing data
+  const hasText = !!f.content_text.trim()
+  const hasUrl = !!f.content_url.trim()
+  const defaultType = hasText && hasUrl ? 'both' : hasUrl ? 'video' : 'text'
+  const [contentType, setContentType] = useState(defaultType)
+  const [showPreview, setShowPreview] = useState(false)
+
+  const embedUrl = parseVideoEmbed(f.content_url)
+  const linkedQuizzes = initial.id ? quizzes.filter((q) => q.lesson_id === initial.id) : []
+
+  function insertMarkdown(syntax) {
+    const ta = document.getElementById('lesson-content-editor')
+    if (!ta) return
+    const start = ta.selectionStart
+    const end = ta.selectionEnd
+    const text = f.content_text
+    const selected = text.substring(start, end)
+    let replacement
+    if (syntax === 'bold') replacement = `**${selected || 'text'}**`
+    else if (syntax === 'italic') replacement = `*${selected || 'text'}*`
+    else if (syntax === 'bullet') replacement = `\n- ${selected || 'item'}`
+    else return
+    const newText = text.substring(0, start) + replacement + text.substring(end)
+    setF({ ...f, content_text: newText })
+  }
+
   return (
     <form onSubmit={(e) => { e.preventDefault(); onSave(f) }}>
       <div className="field"><label>Title</label><input value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} required /></div>
@@ -529,12 +790,109 @@ function LessonForm({ initial, saving, onSave, onCancel }) {
           </select>
         </div>
       </div>
-      <div className="field"><label>Content URL</label><input value={f.content_url} onChange={(e) => setF({ ...f, content_url: e.target.value })} placeholder="https://…" /></div>
-      <div className="field"><label>Content Text</label><textarea rows={4} value={f.content_text} onChange={(e) => setF({ ...f, content_text: e.target.value })} /></div>
+
+      {/* Content Type Selector */}
+      <div className="field">
+        <label>Content Type</label>
+        <div style={{ display: 'flex', gap: 0, border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-sm)', overflow: 'hidden', width: 'fit-content' }}>
+          {[{ key: 'text', label: 'Text' }, { key: 'video', label: 'Video URL' }, { key: 'both', label: 'Both' }].map((t) => (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => setContentType(t.key)}
+              style={{
+                padding: '6px 14px', fontSize: 12, fontWeight: 500, border: 'none', cursor: 'pointer',
+                background: contentType === t.key ? 'var(--green)' : 'transparent',
+                color: contentType === t.key ? '#fff' : 'var(--text-muted)',
+              }}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Video URL */}
+      {(contentType === 'video' || contentType === 'both') && (
+        <div className="field">
+          <label>Video URL</label>
+          <input value={f.content_url} onChange={(e) => setF({ ...f, content_url: e.target.value })} placeholder="https://youtube.com/watch?v=... or https://vimeo.com/..." />
+          {embedUrl && (
+            <div style={{ marginTop: 8, borderRadius: 'var(--radius-sm)', overflow: 'hidden', border: '1px solid var(--border-subtle)' }}>
+              <iframe src={embedUrl} width="100%" height="200" style={{ border: 'none', display: 'block' }} allowFullScreen title="Video preview" />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Content Text with Markdown */}
+      {(contentType === 'text' || contentType === 'both') && (
+        <div className="field">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+            <label style={{ margin: 0 }}>Content Text</label>
+            <div style={{ display: 'flex', gap: 2 }}>
+              <button type="button" className="cm-icon-btn" title="Bold" onClick={() => insertMarkdown('bold')} style={{ width: 26, height: 26 }}><TextB size={12} /></button>
+              <button type="button" className="cm-icon-btn" title="Italic" onClick={() => insertMarkdown('italic')} style={{ width: 26, height: 26 }}><TextItalic size={12} /></button>
+              <button type="button" className="cm-icon-btn" title="Bullet" onClick={() => insertMarkdown('bullet')} style={{ width: 26, height: 26 }}><ListBullets size={12} /></button>
+              <button
+                type="button"
+                className="cm-icon-btn"
+                title={showPreview ? 'Edit' : 'Preview'}
+                onClick={() => setShowPreview((v) => !v)}
+                style={{ width: 26, height: 26, marginLeft: 4, color: showPreview ? 'var(--green)' : undefined }}
+              >
+                {showPreview ? <EyeSlash size={12} /> : <Eye size={12} />}
+              </button>
+            </div>
+          </div>
+          {showPreview ? (
+            <div
+              className="cm-md-preview"
+              style={{ minHeight: 100, padding: 10, border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-sm)', fontSize: 13, lineHeight: 1.6, background: 'var(--surface)' }}
+              dangerouslySetInnerHTML={{ __html: renderMarkdown(f.content_text) }}
+            />
+          ) : (
+            <textarea
+              id="lesson-content-editor"
+              rows={6}
+              value={f.content_text}
+              onChange={(e) => setF({ ...f, content_text: e.target.value })}
+              placeholder="Use **bold**, *italic*, and - bullets for formatting"
+              style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}
+            />
+          )}
+        </div>
+      )}
+
       <label className="cm-toggle-label"><input type="checkbox" checked={f.active} onChange={(e) => setF({ ...f, active: e.target.checked })} /> Active</label>
+
+      {/* Attached Quiz Questions */}
+      {initial.id && (
+        <div style={{ marginTop: 16, padding: '12px 14px', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-sm)', background: 'var(--surface)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>
+              Quiz Questions <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>({linkedQuizzes.length} linked)</span>
+            </div>
+            <button type="button" style={{ fontSize: 11, color: 'var(--green)', fontWeight: 500 }} onClick={() => onGoToQuizTab?.(initial.id)}>
+              Manage Quiz &rarr;
+            </button>
+          </div>
+          {linkedQuizzes.length > 0 && (
+            <div style={{ marginTop: 8, fontSize: 11, color: 'var(--text-dim)' }}>
+              {linkedQuizzes.slice(0, 5).map((q) => (
+                <div key={q.id} style={{ padding: '3px 0', borderTop: '1px solid var(--border-subtle)' }}>
+                  {q.question_text?.slice(0, 60)}{q.question_text?.length > 60 ? '...' : ''}
+                </div>
+              ))}
+              {linkedQuizzes.length > 5 && <div style={{ color: 'var(--text-muted)', paddingTop: 3 }}>+{linkedQuizzes.length - 5} more</div>}
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="modal-actions" style={{ marginTop: 16 }}>
         <button type="button" onClick={onCancel}>Cancel</button>
-        <button type="submit" className="primary" disabled={saving}>{saving ? 'Saving…' : 'Save'}</button>
+        <button type="submit" className="primary" disabled={saving}>{saving ? 'Saving...' : 'Save'}</button>
       </div>
     </form>
   )

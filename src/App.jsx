@@ -39,9 +39,14 @@ function PageFade({ children }) {
 }
 
 function LandingOrDashboard() {
-  const { isAuthenticated } = useAuth()
-  if (isAuthenticated) return <Navigate to="/dashboard" replace />
+  const { isAuthenticated, isSupervisor } = useAuth()
+  if (isAuthenticated) return <Navigate to={isSupervisor ? '/supervisor' : '/dashboard'} replace />
   return <Landing />
+}
+
+function CatchAll() {
+  const { isSupervisor } = useAuth()
+  return <Navigate to={isSupervisor ? '/supervisor' : '/dashboard'} replace />
 }
 
 function AnimatedRoutes() {
@@ -112,7 +117,7 @@ function AnimatedRoutes() {
             }
           />
         </Route>
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        <Route path="*" element={<CatchAll />} />
       </Routes>
     </AnimatePresence>
   )
