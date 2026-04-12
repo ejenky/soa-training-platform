@@ -51,7 +51,7 @@ export default function Register() {
         password: password,
         passwordConfirm: password,
         role: 'agent',
-        status: 'active',
+        status: 'Active',
         certification_level: 0,
       })
 

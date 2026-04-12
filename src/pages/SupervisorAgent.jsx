@@ -196,7 +196,7 @@ export default function SupervisorAgent() {
   async function handleRemoveAgent() {
     setRemoving(true)
     try {
-      await pb.collection('users').update(id, { status: 'suspended' })
+      await pb.collection('users').update(id, { status: 'Suspended' })
       setShowRemoveConfirm(false)
       navigate('/supervisor')
     } catch {
@@ -210,7 +210,8 @@ export default function SupervisorAgent() {
   const memberSince = agent.created
     ? new Date(agent.created).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
     : '--'
-  const status = agent.status || 'active'
+  const statusRaw = agent.status || 'Active'
+  const status = statusRaw.toLowerCase()
 
   return (
     <div className="page sa-page">
@@ -507,13 +508,13 @@ export default function SupervisorAgent() {
           <div className="sa-action-group">
             <label className="sa-action-label">Status</label>
             <select
-              value={status}
+              value={statusRaw}
               disabled={statusSaving}
               onChange={(e) => handleStatusChange(e.target.value)}
             >
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-              <option value="suspended">Suspended</option>
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+              <option value="Suspended">Suspended</option>
             </select>
             {statusMsg === 'saved' && <span className="inline-success">Updated</span>}
             {statusMsg === 'error' && <span className="inline-error">Failed</span>}

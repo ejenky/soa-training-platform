@@ -207,7 +207,7 @@ export default function Supervisor() {
       const q = search.toLowerCase()
       list = list.filter((a) => (a.name || '').toLowerCase().includes(q) || (a.email || '').toLowerCase().includes(q))
     }
-    if (statusFilter !== 'all') list = list.filter((a) => (a.status || 'active') === statusFilter)
+    if (statusFilter !== 'all') list = list.filter((a) => (a.status || 'Active') === statusFilter)
     if (levelFilter !== 'all') list = list.filter((a) => agentMetrics[a.id]?.level.name === levelFilter)
 
     list.sort((a, b) => {
@@ -246,7 +246,7 @@ export default function Supervisor() {
         password: addForm.password,
         passwordConfirm: addForm.password,
         role: 'agent',
-        status: 'active',
+        status: 'Active',
         supervisor_id: user.id,
         certification_level: 0,
       })
@@ -254,9 +254,18 @@ export default function Supervisor() {
       setAddSuccess(true)
       setAddForm({ firstName: '', lastName: '', email: '', password: '' })
     } catch (err) {
+      console.error('Add agent error:', err?.response || err)
       const data = err?.response?.data
-      if (data?.email) setAddErrors({ email: 'An account with this email already exists' })
-      else setAddErrors({ form: err?.message || 'Failed to create agent' })
+      if (data?.email) {
+        setAddErrors({ email: data.email.message || 'An account with this email already exists' })
+      } else if (data) {
+        // Surface the first field-level error from PocketBase
+        const firstKey = Object.keys(data).find((k) => data[k]?.message)
+        if (firstKey) setAddErrors({ form: `${firstKey}: ${data[firstKey].message}` })
+        else setAddErrors({ form: err?.message || 'Failed to create agent' })
+      } else {
+        setAddErrors({ form: err?.message || 'Failed to create agent' })
+      }
     } finally {
       setAddSubmitting(false)
     }
@@ -370,9 +379,9 @@ export default function Supervisor() {
         </div>
         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
           <option value="all">All Status</option>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-          <option value="suspended">Suspended</option>
+          <option value="Active">Active</option>
+          <option value="Inactive">Inactive</option>
+          <option value="Suspended">Suspended</option>
         </select>
         <select value={levelFilter} onChange={(e) => setLevelFilter(e.target.value)}>
           <option value="all">All Levels</option>
@@ -399,9 +408,9 @@ export default function Supervisor() {
               {showBulk && (
                 <div className="sv-export-dropdown">
                   <button onClick={bulkExportCSV}>Export Selected</button>
-                  <button onClick={() => bulkChangeStatus('active')}>Set Active</button>
-                  <button onClick={() => bulkChangeStatus('inactive')}>Set Inactive</button>
-                  <button onClick={() => bulkChangeStatus('suspended')}>Suspend</button>
+                  <button onClick={() => bulkChangeStatus('Active')}>Set Active</button>
+                  <button onClick={() => bulkChangeStatus('Inactive')}>Set Inactive</button>
+                  <button onClick={() => bulkChangeStatus('Suspended')}>Suspend</button>
                 </div>
               )}
             </div>
@@ -459,7 +468,7 @@ export default function Supervisor() {
               <tbody>
                 {filtered.map((a, i) => {
                   const m = agentMetrics[a.id] || {}
-                  const status = a.status || 'active'
+                  const status = (a.status || 'Active').toLowerCase()
                   return (
                     <motion.tr key={a.id} custom={i} variants={stagger} initial="hidden" animate="visible" className="sv-row" onClick={() => navigate(`/supervisor/agent/${a.id}`)}>
                       <td className="no-print" style={{ width: 32 }} onClick={(e) => e.stopPropagation()}>
