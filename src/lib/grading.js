@@ -4,34 +4,38 @@
 // keyword groups; the agent's answer earns a point for every group where at
 // least one synonym appears (case-insensitive).
 const RUBRICS = {
-  intro_soa: [
-    ['licensed', 'license', 'agent'],
-    ['monitored', 'recorded', 'recording'],
-    ['medicare advantage', 'advantage plan', 'part d'],
-    ['medicare contract', 'contract renewal'],
-    ['permission', 'okay', 'is it ok', 'may i'],
+  'Intro/SOA': [
+    ['licensed', 'license', 'agent', 'certified'],
+    ['monitored', 'recorded', 'recording', 'protection'],
+    ['medicare advantage', 'advantage plan', 'part d', 'medicare-approved'],
+    ['permission', 'okay', 'is it ok', 'may i', 'do i have your permission'],
+    ['government', 'government program', 'medicare.gov'],
   ],
-  trust: [
-    ['licensed', 'license'],
-    ['no cost', 'no obligation', 'free'],
-    ['medicare', 'cms'],
-    ['help', 'assist', 'review'],
+  'RWB Card': [
+    ['protect', 'safe', 'secure', 'security', 'protected'],
+    ['licensed', 'license', 'certified', 'credentials'],
+    ['won\'t need', 'don\'t need', 'not required', 'not right now', 'no pressure'],
+    ['verify', 'confirm', 'later', 'when you\'re ready', 'your choice'],
+    ['recorded', 'recording', 'monitored', 'your protection'],
   ],
-  benefits: [
-    ['plan', 'plans'],
-    ['benefits', 'coverage'],
-    ['carriers', 'companies', 'organizations'],
-    ['area', 'zip', 'county'],
+  'SEP': [
+    ['qualify', 'eligible', 'eligibility'],
+    ['enrollment period', 'special enrollment', 'initial enrollment', 'annual enrollment'],
+    ['deadline', 'window', 'timeframe', 'time frame'],
+    ['change', 'switch', 'enroll', 'sign up'],
+    ['moved', 'lost coverage', 'extra help', 'medicaid', 'dual eligible'],
   ],
-  cost: [
-    ['no cost', 'no charge', 'free', 'zero'],
-    ['premium', 'monthly'],
-    ['eligible', 'qualify'],
+  'No Value': [
+    ['benefits', 'extra benefits', 'additional benefits'],
+    ['savings', 'save', 'no cost', 'no additional', 'zero premium', 'no extra cost'],
+    ['dental', 'vision', 'hearing', 'otc', 'over-the-counter', 'prescription'],
+    ['compare', 'review', 'check', 'see what\'s available', 'options in your area'],
+    ['help', 'assist', 'here to help', 'no obligation', 'no commitment'],
   ],
   default: [
-    ['medicare', 'plan'],
-    ['help', 'assist', 'review'],
-    ['licensed', 'agent'],
+    ['medicare', 'plan', 'medicare advantage'],
+    ['help', 'assist', 'review', 'here to help'],
+    ['licensed', 'agent', 'certified'],
   ],
 }
 

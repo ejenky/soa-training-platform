@@ -11,7 +11,12 @@ import { pb } from '../lib/pb'
 import { CATEGORIES } from '../lib/gamification'
 
 const TABS = ['Lessons', 'Objections', 'Quiz Questions', 'Roleplays']
-const BLOOM_LEVELS = ['remember', 'understand', 'apply', 'analyze']
+const BLOOM_LEVELS = [
+  { value: 'remember', label: 'Knowledge — learn the facts' },
+  { value: 'understand', label: 'Comprehension — understand why' },
+  { value: 'apply', label: 'Application — use in practice' },
+  { value: 'analyze', label: 'Mastery — handle complex situations' },
+]
 const CALL_STAGES = [
   { value: 'intro_soa', label: 'Intro / SOA' },
   { value: 'qualifying', label: 'Qualifying' },
@@ -417,7 +422,7 @@ export default function ContentManager() {
                 <div key={l.id} className="cm-row">
                   <div className="cm-row-main">
                     <div className="cm-row-title">{l.title}</div>
-                    <div className="cm-row-meta">Week {l.week_number} · Order {l.order_index} · {l.bloom_level} · {l.active ? 'Active' : 'Inactive'}</div>
+                    <div className="cm-row-meta">Week {l.week_number} · Order {l.order_index} · {BLOOM_LEVELS.find((b) => b.value === l.bloom_level)?.label?.split(' — ')[0] || l.bloom_level} · {l.active ? 'Active' : 'Inactive'}</div>
                   </div>
                   <div className="cm-row-actions">
                     <button className="cm-icon-btn" title="Edit" onClick={() => setEditItem(l)}><PencilSimple size={14} /></button>
@@ -786,7 +791,7 @@ function LessonForm({ initial, saving, onSave, onCancel, quizzes = [], onGoToQui
         <div className="field">
           <label>Bloom Level</label>
           <select value={f.bloom_level} onChange={(e) => setF({ ...f, bloom_level: e.target.value })}>
-            {BLOOM_LEVELS.map((b) => <option key={b} value={b}>{b}</option>)}
+            {BLOOM_LEVELS.map((b) => <option key={b.value} value={b.value}>{b.label}</option>)}
           </select>
         </div>
       </div>

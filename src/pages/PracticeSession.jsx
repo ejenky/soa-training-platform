@@ -46,54 +46,28 @@ const SCRIPT_BLOCKS = [
 
 /* ── Hardcoded fallback objections ─────────────────────────────── */
 const FALLBACK_OBJECTIONS = [
-  { id: 'fb1', text: 'No, I was calling about that Medicare help for groceries and stuff, but I already have insurance.', category: 'Expectation Mismatch', difficulty: 1, call_stage: 'intro_soa' },
-  { id: 'fb2', text: "I don't need any kind of insurance. I've got life insurance and supplemental insurance.", category: 'Plan Resistance', difficulty: 1, call_stage: 'intro_soa' },
-  { id: 'fb3', text: 'Will I lose my Medicare if I go with this program?', category: 'Confusion', difficulty: 2, call_stage: 'intro_soa' },
-  { id: 'fb4', text: "I didn't know that this was insurance related. I thought this was from the government.", category: 'Expectation Mismatch', difficulty: 2, call_stage: 'intro_soa' },
-  { id: 'fb5', text: "I'm not looking to change my plan. What I'm looking for is benefits.", category: 'Plan Resistance', difficulty: 2, call_stage: 'intro_soa' },
-  { id: 'fb6', text: "I'm not giving you my red, white, and blue card number.", category: 'Distrust', difficulty: 3, call_stage: 'intro_soa' },
-  { id: 'fb7', text: "I think we'll end this right now. We're just going through a bunch of bullshit.", category: 'Angry', difficulty: 3, call_stage: 'intro_soa' },
-  { id: 'fb8', text: 'I thought this was through Social Security, but this is another supplemental insurance thing.', category: 'Expectation Mismatch', difficulty: 2, call_stage: 'intro_soa' },
-  { id: 'fb9', text: 'I already have Medicare. I already have Medicare.', category: 'Plan Resistance', difficulty: 1, call_stage: 'intro_soa' },
-  { id: 'fb10', text: "I can't understand — if it's supposed to be Social Security benefits, what do I gotta go through insurance for?", category: 'Confusion', difficulty: 3, call_stage: 'intro_soa' },
+  // Intro/SOA — objections about the intro script, recorded calls, disclosures
+  { id: 'fb1', text: "I didn't know that this was insurance related. I thought this was from the government.", category: 'Intro/SOA', difficulty: 1, call_stage: 'intro_soa' },
+  { id: 'fb2', text: 'I thought this was through Social Security, but this is another supplemental insurance thing.', category: 'Intro/SOA', difficulty: 2, call_stage: 'intro_soa' },
+  { id: 'fb3', text: "I can't understand — if it's supposed to be Social Security benefits, what do I gotta go through insurance for?", category: 'Intro/SOA', difficulty: 3, call_stage: 'intro_soa' },
+  // RWB Card — objections about sharing their red/white/blue Medicare card
+  { id: 'fb4', text: "I'm not giving you my red, white, and blue card number.", category: 'RWB Card', difficulty: 2, call_stage: 'intro_soa' },
+  { id: 'fb5', text: "My daughter told me to never give my Medicare number to anyone over the phone.", category: 'RWB Card', difficulty: 3, call_stage: 'intro_soa' },
+  { id: 'fb6', text: "How do I know you're not going to steal my identity with my card number?", category: 'RWB Card', difficulty: 3, call_stage: 'intro_soa' },
+  // SEP — objections about enrollment periods and eligibility
+  { id: 'fb7', text: "I already missed the enrollment period so I can't do anything until next year right?", category: 'SEP', difficulty: 2, call_stage: 'intro_soa' },
+  { id: 'fb8', text: 'I just turned 65 last month, am I even eligible for any of this?', category: 'SEP', difficulty: 1, call_stage: 'intro_soa' },
+  // No Value — objections from clients who see no value or don't want it
+  { id: 'fb9', text: "I don't need any kind of insurance. I've got life insurance and supplemental insurance.", category: 'No Value', difficulty: 1, call_stage: 'intro_soa' },
+  { id: 'fb10', text: 'No, I was calling about that Medicare help for groceries and stuff, but I already have insurance.', category: 'No Value', difficulty: 1, call_stage: 'intro_soa' },
+  { id: 'fb11', text: "I think we'll end this right now. We're just going through a bunch of bullshit.", category: 'No Value', difficulty: 3, call_stage: 'intro_soa' },
+  { id: 'fb12', text: "I'm not looking to change my plan. What I'm looking for is benefits.", category: 'No Value', difficulty: 2, call_stage: 'intro_soa' },
 ]
 
 /* ── Hardcoded MC options per fallback objection ───────────────── */
 const FALLBACK_MC = {
+  // Intro/SOA
   fb1: {
-    question: 'How should you respond to this client?',
-    options: [
-      'I understand — many of our callers say the same thing! What we actually offer are Medicare Advantage plans that can include grocery and OTC benefits. Since you already have insurance, I can see if there\'s a plan with even more benefits at no extra cost.',
-      'That\'s not what this call is about. Let me explain what Medicare Advantage is.',
-      'If you already have insurance then I can\'t help you. Have a nice day.',
-      'The groceries program is separate. Let me transfer you to that department.',
-    ],
-    correct: 0,
-    explanation: 'Acknowledge their expectation, validate it, then bridge to what you actually offer while highlighting potential additional benefits.',
-  },
-  fb2: {
-    question: 'Choose the best response:',
-    options: [
-      'This isn\'t life insurance or supplemental — this is a Medicare Advantage plan. It\'s different from what you have now.',
-      'Great that you have coverage! Medicare Advantage is different from life or supplemental insurance — it\'s your primary Medicare coverage that can include extra benefits like dental, vision, and prescription drugs, often at no additional premium.',
-      'You need this too though, it\'s important.',
-      'That\'s fine, I\'ll just mark you down as not interested.',
-    ],
-    correct: 1,
-    explanation: 'Validate their existing coverage, then clearly differentiate Medicare Advantage from other insurance types while highlighting unique benefits.',
-  },
-  fb3: {
-    question: 'What\'s the best way to address this concern?',
-    options: [
-      'No, you keep your Medicare. A Medicare Advantage plan is simply another way to receive your Medicare benefits — often with additional coverage like dental, vision, and hearing, plus lower out-of-pocket costs.',
-      'I\'m not sure about that. Let me check with my supervisor.',
-      'You might lose some parts of it.',
-      'That\'s a good question. Let me just get your information first and we can discuss that later.',
-    ],
-    correct: 0,
-    explanation: 'Directly address the fear, reassure them they keep Medicare, and explain how Medicare Advantage works as a delivery method for their benefits.',
-  },
-  fb4: {
     question: 'How should you handle this misunderstanding?',
     options: [
       'Well, it is related to insurance. That\'s just how it works.',
@@ -104,40 +78,7 @@ const FALLBACK_MC = {
     correct: 2,
     explanation: 'Bridge the gap between their expectation and reality by connecting government Medicare to Medicare Advantage plans, emphasizing the plans are Medicare-approved.',
   },
-  fb5: {
-    question: 'Select the best response:',
-    options: [
-      'Well, this is about changing your plan to get more benefits.',
-      'That\'s exactly what I\'m here to help with! Many Medicare Advantage plans include extra benefits like dental, vision, hearing, and over-the-counter allowances — and switching may not cost you anything additional. Let me see what\'s available in your area.',
-      'You can\'t get extra benefits without changing your plan.',
-      'I understand. Have a great day then.',
-    ],
-    correct: 1,
-    explanation: 'Reframe "changing plans" as "getting more benefits" — align with what they want rather than contradicting them.',
-  },
-  fb6: {
-    question: 'How do you handle this trust concern?',
-    options: [
-      'I totally understand your caution, and I appreciate that. I won\'t ask for your Medicare number right now. I\'m a licensed agent, and everything we discuss is protected. Let me first just review what plan options are available in your area — no commitment required.',
-      'I need that number to look up your plan options.',
-      'Fine, we can skip that part. What\'s your zip code?',
-      'Everyone gives us their card number. It\'s totally safe.',
-    ],
-    correct: 0,
-    explanation: 'Validate their caution, emphasize you\'re licensed, remove pressure by not requiring the number immediately, and redirect to a low-commitment next step.',
-  },
-  fb7: {
-    question: 'What\'s the best approach here?',
-    options: [
-      'I\'m sorry you feel that way. Let me just quickly explain what we offer.',
-      'I understand this may not be what you expected when you called. I apologize for any frustration. I\'m here to help, and if you give me just 60 seconds, I can explain exactly what benefits may be available to you at no cost. If it\'s not for you, no problem at all.',
-      'There\'s no need for that kind of language.',
-      'Okay, have a nice day.',
-    ],
-    correct: 1,
-    explanation: 'De-escalate with empathy, acknowledge their frustration, make a small time-bound ask, and give them an easy out to reduce pressure.',
-  },
-  fb8: {
+  fb2: {
     question: 'Choose the best response:',
     options: [
       'I understand the confusion. The benefits you heard about are actually available through Medicare, which is a government program. We help connect you with Medicare Advantage plans that include those extra benefits — dental, vision, OTC allowances — often at no additional premium to you.',
@@ -148,18 +89,7 @@ const FALLBACK_MC = {
     correct: 0,
     explanation: 'Connect the dots between their expectations and Medicare, validate the government connection, and pivot to specific benefits.',
   },
-  fb9: {
-    question: 'How should you respond?',
-    options: [
-      'That\'s great, but this is different.',
-      'Perfect — since you already have Medicare, you may qualify for a Medicare Advantage plan that gives you all your current Medicare benefits PLUS extras like dental, vision, hearing, and a monthly OTC allowance. There\'s often no additional monthly premium. Can I check what\'s available in your zip code?',
-      'If you already have Medicare then why did you call?',
-      'Right, but do you have Medicare Advantage? That\'s what we offer.',
-    ],
-    correct: 1,
-    explanation: 'Build on what they already have rather than contradicting them. Position Medicare Advantage as an upgrade, not a replacement.',
-  },
-  fb10: {
+  fb3: {
     question: 'What\'s the best response?',
     options: [
       'Social Security and Medicare are related but different.',
@@ -169,6 +99,108 @@ const FALLBACK_MC = {
     ],
     correct: 1,
     explanation: 'Connect Medicare to Social Security as familiar government programs, validate their confusion, and clearly explain the relationship.',
+  },
+  // RWB Card
+  fb4: {
+    question: 'How do you handle this trust concern?',
+    options: [
+      'I totally understand your caution, and I appreciate that. I won\'t ask for your Medicare number right now. I\'m a licensed agent, and everything we discuss is protected. Let me first just review what plan options are available in your area — no commitment required.',
+      'I need that number to look up your plan options.',
+      'Fine, we can skip that part. What\'s your zip code?',
+      'Everyone gives us their card number. It\'s totally safe.',
+    ],
+    correct: 0,
+    explanation: 'Validate their caution, emphasize you\'re licensed, remove pressure by not requiring the number immediately, and redirect to a low-commitment next step.',
+  },
+  fb5: {
+    question: 'How should you respond to this family-influenced concern?',
+    options: [
+      'Your daughter is giving you good advice to be careful. I\'m a licensed and certified agent, and I won\'t need your Medicare number until you\'ve decided you want to enroll. Right now, I just want to review what benefits are available in your area.',
+      'We\'re a legitimate company. Your daughter doesn\'t understand how this works.',
+      'I promise we won\'t do anything bad with it.',
+      'That\'s fine, we can\'t help you without it though.',
+    ],
+    correct: 0,
+    explanation: 'Validate the family member\'s advice, establish your credentials, and defer the card request to reduce pressure.',
+  },
+  fb6: {
+    question: 'What\'s the best way to address this identity theft concern?',
+    options: [
+      'I completely understand — protecting your identity is important. I\'m a licensed agent with (company name), and this call is recorded for your protection. I don\'t need your Medicare number to review plan options. We can discuss benefits first, and you\'ll only share information if you choose to move forward.',
+      'We would never steal your identity. We\'re a real company.',
+      'That\'s a fair concern. Just give me your zip code instead.',
+      'I\'m required by law to keep your information safe, so you have nothing to worry about.',
+    ],
+    correct: 0,
+    explanation: 'Acknowledge the concern seriously, reference the call recording as protection, and remove the pressure to share sensitive information.',
+  },
+  // SEP
+  fb7: {
+    question: 'How should you address this enrollment period concern?',
+    options: [
+      'You\'re right, you\'ll have to wait until the Annual Enrollment Period.',
+      'Actually, there are Special Enrollment Periods that may apply to you. If you\'ve had certain changes — like moving, losing coverage, or qualifying for Extra Help — you may be eligible to enroll right now. Let me ask a few questions to see if you qualify.',
+      'Don\'t worry about enrollment periods, we can get you signed up anytime.',
+      'When does your current plan end? That\'s when we can make changes.',
+    ],
+    correct: 1,
+    explanation: 'Educate about SEPs without making promises. Ask qualifying questions to determine if they have a valid enrollment opportunity.',
+  },
+  fb8: {
+    question: 'What\'s the best response for a new Medicare beneficiary?',
+    options: [
+      'Yes! Since you recently turned 65, you\'re in your Initial Enrollment Period. This is actually the best time to look at your options. You have a 7-month window around your 65th birthday to choose a Medicare Advantage plan. Let me help you understand what\'s available in your area.',
+      'You need to sign up for Original Medicare first before we can talk.',
+      'I\'m not sure about the age requirements. Let me check.',
+      'Call Medicare.gov to find out if you\'re eligible.',
+    ],
+    correct: 0,
+    explanation: 'Confirm their eligibility enthusiastically, explain the IEP window, and position yourself as helpful during this important decision period.',
+  },
+  // No Value
+  fb9: {
+    question: 'Choose the best response:',
+    options: [
+      'This isn\'t life insurance or supplemental — this is a Medicare Advantage plan. It\'s different from what you have now.',
+      'Great that you have coverage! Medicare Advantage is different from life or supplemental insurance — it\'s your primary Medicare coverage that can include extra benefits like dental, vision, and prescription drugs, often at no additional premium.',
+      'You need this too though, it\'s important.',
+      'That\'s fine, I\'ll just mark you down as not interested.',
+    ],
+    correct: 1,
+    explanation: 'Validate their existing coverage, then clearly differentiate Medicare Advantage from other insurance types while highlighting unique benefits.',
+  },
+  fb10: {
+    question: 'How should you respond to this client?',
+    options: [
+      'I understand — many of our callers say the same thing! What we actually offer are Medicare Advantage plans that can include grocery and OTC benefits. Since you already have insurance, I can see if there\'s a plan with even more benefits at no extra cost.',
+      'That\'s not what this call is about. Let me explain what Medicare Advantage is.',
+      'If you already have insurance then I can\'t help you. Have a nice day.',
+      'The groceries program is separate. Let me transfer you to that department.',
+    ],
+    correct: 0,
+    explanation: 'Acknowledge their expectation, validate it, then bridge to what you actually offer while highlighting potential additional benefits.',
+  },
+  fb11: {
+    question: 'What\'s the best approach here?',
+    options: [
+      'I\'m sorry you feel that way. Let me just quickly explain what we offer.',
+      'I understand this may not be what you expected when you called. I apologize for any frustration. I\'m here to help, and if you give me just 60 seconds, I can explain exactly what benefits may be available to you at no cost. If it\'s not for you, no problem at all.',
+      'There\'s no need for that kind of language.',
+      'Okay, have a nice day.',
+    ],
+    correct: 1,
+    explanation: 'De-escalate with empathy, acknowledge their frustration, make a small time-bound ask, and give them an easy out to reduce pressure.',
+  },
+  fb12: {
+    question: 'Select the best response:',
+    options: [
+      'Well, this is about changing your plan to get more benefits.',
+      'That\'s exactly what I\'m here to help with! Many Medicare Advantage plans include extra benefits like dental, vision, hearing, and over-the-counter allowances — and switching may not cost you anything additional. Let me see what\'s available in your area.',
+      'You can\'t get extra benefits without changing your plan.',
+      'I understand. Have a great day then.',
+    ],
+    correct: 1,
+    explanation: 'Reframe "changing plans" as "getting more benefits" — align with what they want rather than contradicting them.',
   },
 }
 
