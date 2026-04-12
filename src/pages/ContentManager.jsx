@@ -98,9 +98,9 @@ export default function ContentManager() {
     async function load() {
       try {
         const [ls, os, qs, scs] = await Promise.all([
-          pb.collection('lessons').getFullList({ sort: 'week_number,order_index' }),
-          pb.collection('objections').getFullList({ sort: '-created' }),
-          pb.collection('quiz_questions').getFullList({ sort: '-created' }),
+          pb.collection('lessons').getFullList({ sort: 'week_number,order_index' }).catch(() => []),
+          pb.collection('objections').getFullList({ sort: '-created' }).catch(() => []),
+          pb.collection('quiz_questions').getFullList({ sort: '-created' }).catch(() => []),
           pb.collection('scenarios').getFullList({ sort: 'name' }).catch(() => []),
         ])
         // Fetch line counts per scenario
@@ -272,7 +272,7 @@ export default function ContentManager() {
     <div className="page cm-page">
       <div className="page-header">
         <h1>Content Manager</h1>
-        <p className="lede">Manage training lessons, objections, and quiz questions.</p>
+        <p className="lede">Manage training lessons, objections, quiz questions, and roleplays.</p>
       </div>
 
       {/* Tabs */}
@@ -305,7 +305,7 @@ export default function ContentManager() {
           </button>
         ) : (
           <button className="sv-add-btn" style={{ marginLeft: 'auto' }} onClick={() => setEditItem({})}>
-            <Plus size={14} weight="bold" /> Add {tab === 3 ? 'Scenario' : TABS[tab].replace(/s$/, '')}
+            <Plus size={14} weight="bold" /> Add {tab === 3 ? 'Roleplay' : TABS[tab].replace(/s$/, '')}
           </button>
         )}
       </div>
@@ -414,7 +414,7 @@ export default function ContentManager() {
       {/* ── SCENARIOS TAB ── */}
       {tab === 3 && !lineEditorId && (
         <div className="card cm-list-card">
-          {scenarios.length === 0 ? <div className="empty-state"><p>No scenarios yet.</p></div> : (
+          {scenarios.length === 0 ? <div className="empty-state"><p>No roleplays yet.</p></div> : (
             <div className="cm-list">
               {scenarios.map((s) => (
                 <div key={s.id} className="cm-row">
@@ -478,7 +478,7 @@ export default function ContentManager() {
 
       {/* ── SCENARIO MODAL ── */}
       {tab === 3 && editItem !== null && !lineEditorId && (
-        <Modal title={editItem.id ? 'Edit Scenario' : 'Add Scenario'} open onClose={() => setEditItem(null)}>
+        <Modal title={editItem.id ? 'Edit Roleplay' : 'Add Roleplay'} open onClose={() => setEditItem(null)}>
           <ScenarioForm initial={editItem} saving={saving} onSave={saveScenario} onCancel={() => setEditItem(null)} />
         </Modal>
       )}
@@ -492,7 +492,7 @@ export default function ContentManager() {
 
       <ConfirmDialog
         open={!!deleteTarget}
-        message={tab === 3 ? 'Delete this scenario and all its lines? This cannot be undone.' : `Delete this ${TABS[tab].replace(/s$/, '').toLowerCase()}? This cannot be undone.`}
+        message={tab === 3 ? 'Delete this roleplay and all its lines? This cannot be undone.' : `Delete this ${TABS[tab].replace(/s$/, '').toLowerCase()}? This cannot be undone.`}
         onConfirm={handleDelete}
         onCancel={() => setDeleteTarget(null)}
         loading={deleting}
@@ -668,7 +668,7 @@ function ScenarioForm({ initial, saving, onSave, onCancel }) {
   })
   return (
     <form onSubmit={(e) => { e.preventDefault(); onSave(f) }}>
-      <div className="field"><label>Scenario Name</label><input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder='e.g. "Dorothy - Food Card Confusion"' required /></div>
+      <div className="field"><label>Roleplay Name</label><input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder='e.g. "Dorothy - Food Card Confusion"' required /></div>
       <div className="form-grid">
         <div className="field"><label>Persona Name</label><input value={f.persona_name} onChange={(e) => setF({ ...f, persona_name: e.target.value })} placeholder="Dorothy" required /></div>
         <div className="field"><label>Persona Age</label><input type="number" min={18} max={110} value={f.persona_age} onChange={(e) => setF({ ...f, persona_age: +e.target.value })} /></div>

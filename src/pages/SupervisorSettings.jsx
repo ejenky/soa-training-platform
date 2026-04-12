@@ -57,6 +57,10 @@ export default function SupervisorSettings() {
         <p className="lede">Configure performance thresholds and certification requirements.</p>
       </div>
 
+      <div className="card" style={{ padding: '14px 18px', marginBottom: 18, background: 'var(--surface)', borderLeft: '3px solid var(--blue)' }}>
+        <p style={{ fontSize: 13, color: 'var(--text-dim)', margin: 0 }}>These settings control how agents are evaluated and when performance flags are triggered.</p>
+      </div>
+
       <motion.div className="card" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
         <h2>Pass Thresholds</h2>
         <div className="form-grid">

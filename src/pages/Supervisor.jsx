@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'motion/react'
-import { Flame, Warning, MagnifyingGlass, ArrowRight, X, Export, Plus } from '@phosphor-icons/react'
+import { Flame, Warning, MagnifyingGlass, ArrowRight, X, Export, Plus, Users, Notebook } from '@phosphor-icons/react'
 import { useAuth } from '../contexts/AuthContext'
 import { pb } from '../lib/pb'
 import { computeXP, computeStreak, levelFor, sessionsInLastDays } from '../lib/gamification'
@@ -46,6 +46,7 @@ export default function Supervisor() {
   const [completions, setCompletions] = useState([])
   const [sessions, setSessions] = useState([])
   const [loading, setLoading] = useState(true)
+  const [contentCounts, setContentCounts] = useState({ lessons: 0, objections: 0, quizzes: 0, roleplays: 0 })
 
   // Filters
   const [search, setSearch] = useState('')
@@ -90,10 +91,23 @@ export default function Supervisor() {
             pb.collection('practice_sessions').getFullList({ filter: ids, sort: '-created' }).catch(() => []),
           ])
         }
+        // Fetch content counts for summary card
+        const [lessonList, objectionList, quizList, scenarioList] = await Promise.all([
+          pb.collection('lessons').getFullList({ fields: 'id' }).catch(() => []),
+          pb.collection('objections').getFullList({ fields: 'id' }).catch(() => []),
+          pb.collection('quiz_questions').getFullList({ fields: 'id' }).catch(() => []),
+          pb.collection('scenarios').getFullList({ fields: 'id' }).catch(() => []),
+        ])
         if (cancelled) return
         setAgents(ag)
         setCompletions(cs)
         setSessions(ps)
+        setContentCounts({
+          lessons: lessonList.length,
+          objections: objectionList.length,
+          quizzes: quizList.length,
+          roleplays: scenarioList.length,
+        })
       } catch (e) {
         console.error(e)
       } finally {
@@ -313,8 +327,14 @@ export default function Supervisor() {
       {/* Agent table */}
       <motion.div className="card sv-table-card" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }}>
         {filtered.length === 0 ? (
-          <div className="empty-state" style={{ padding: '36px 24px' }}>
-            {agents.length === 0 ? <p>No agents assigned to you yet.</p> : <p>No agents match your filters.</p>}
+          <div className="empty-state" style={{ padding: '48px 24px', textAlign: 'center' }}>
+            {agents.length === 0 ? (
+              <>
+                <Users size={48} weight="regular" color="var(--text-muted)" style={{ marginBottom: 12, opacity: 0.6 }} />
+                <p style={{ fontSize: 14, fontWeight: 500, marginBottom: 4 }}>No agents on your team yet.</p>
+                <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Use the <strong>Add Agent</strong> button above to onboard your first agent.</p>
+              </>
+            ) : <p>No agents match your filters.</p>}
           </div>
         ) : (
           <div className="sv-table-scroll">
@@ -366,6 +386,28 @@ export default function Supervisor() {
             </table>
           </div>
         )}
+      </motion.div>
+
+      {/* Content Status */}
+      <motion.div className="card" style={{ marginTop: 18, padding: '18px 22px' }} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.15 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+          <Notebook size={16} weight="regular" color="var(--text-muted)" />
+          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>Content Status</span>
+        </div>
+        <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+          <div style={{ fontSize: 13, color: 'var(--text-dim)' }}>
+            <span style={{ fontWeight: 600, color: 'var(--text)', fontFamily: 'var(--font-mono)' }}>{contentCounts.lessons}</span> Lessons
+          </div>
+          <div style={{ fontSize: 13, color: 'var(--text-dim)' }}>
+            <span style={{ fontWeight: 600, color: 'var(--text)', fontFamily: 'var(--font-mono)' }}>{contentCounts.objections}</span> Objections
+          </div>
+          <div style={{ fontSize: 13, color: 'var(--text-dim)' }}>
+            <span style={{ fontWeight: 600, color: 'var(--text)', fontFamily: 'var(--font-mono)' }}>{contentCounts.quizzes}</span> Quiz Questions
+          </div>
+          <div style={{ fontSize: 13, color: 'var(--text-dim)' }}>
+            <span style={{ fontWeight: 600, color: 'var(--text)', fontFamily: 'var(--font-mono)' }}>{contentCounts.roleplays}</span> Roleplays
+          </div>
+        </div>
       </motion.div>
 
       {/* Print-only header */}
