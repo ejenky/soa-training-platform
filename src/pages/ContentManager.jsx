@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react'
 import Papa from 'papaparse'
 import {
   Plus, PencilSimple, Trash, MagnifyingGlass, X, Check,
-  ArrowUp, ArrowDown, ListBullets, ArrowLeft, UploadSimple, DownloadSimple,
+  ArrowUp, ArrowDown, ListBullets, ArrowLeft, UploadSimple,
   SpeakerHigh, SpeakerSlash, Waveform,
 } from '@phosphor-icons/react'
 import { useAuth } from '../contexts/AuthContext'
@@ -321,16 +321,6 @@ export default function ContentManager() {
     })
   }
 
-  function downloadCsvTemplate() {
-    const csv = `text,category,difficulty\n"I was told I'd get a free food card just for calling",Intro/SOA,2\n"I don't need Medicare, I already have insurance",No Value,3`
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = 'objections-template.csv'
-    link.click()
-    URL.revokeObjectURL(url)
-  }
 
   async function handleCsvImport() {
     const valid = csvRows.filter((r) => r._errors.length === 0)
@@ -674,14 +664,40 @@ export default function ContentManager() {
               Category must be one of: Intro/SOA, RWB Card, SEP, No Value.<br />
               Difficulty: 1-4.
             </p>
-            <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
-              <label className="sv-add-btn" style={{ cursor: 'pointer', background: 'transparent', borderColor: 'var(--border-subtle)' }}>
-                <UploadSimple size={14} /> Choose CSV File
-                <input ref={csvInputRef} type="file" accept=".csv" onChange={handleCsvFile} style={{ display: 'none' }} />
-              </label>
-              <button style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--text-muted)' }} onClick={downloadCsvTemplate}>
-                <DownloadSimple size={14} /> Download Template
-              </button>
+            <div
+              onClick={() => csvInputRef.current?.click()}
+              onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+              onDrop={(e) => {
+                e.preventDefault(); e.stopPropagation();
+                const file = e.dataTransfer.files?.[0];
+                if (file && file.name.endsWith('.csv')) {
+                  const syntheticEvent = { target: { files: [file] } };
+                  handleCsvFile(syntheticEvent);
+                }
+              }}
+              style={{
+                border: '2px dashed var(--border)',
+                borderRadius: 10,
+                padding: '28px 20px',
+                textAlign: 'center',
+                cursor: 'pointer',
+                marginBottom: 14,
+                minHeight: 100,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                background: 'var(--surface)',
+                transition: 'border-color 0.15s',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--blue)'}
+              onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border)'}
+            >
+              <UploadSimple size={32} weight="thin" style={{ color: 'var(--text-dim)' }} />
+              <span style={{ fontSize: 14, color: 'var(--text)', fontWeight: 500 }}>Click to select CSV file or drag and drop</span>
+              <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>Accepts .csv files</span>
+              <input ref={csvInputRef} type="file" accept=".csv" onChange={handleCsvFile} style={{ display: 'none' }} />
             </div>
 
             {csvRows.length > 0 && (
