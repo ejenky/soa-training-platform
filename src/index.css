@@ -3002,22 +3002,6 @@ tbody tr:hover td { background: var(--row-hover); }
 }
 .cm-icon-btn:hover { border-color: var(--text-muted); color: var(--text); }
 .cm-icon-btn.danger:hover { border-color: var(--error); color: var(--error); }
-.cm-md-btn {
-  min-width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-  color: var(--text-dim);
-  font-size: 14px;
-  font-family: inherit;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
-}
-.cm-md-btn:hover { border-color: var(--text-muted); color: var(--text); background: var(--hover-bg-strong); }
 .cm-content-toggle {
   display: flex;
   gap: 0;
@@ -3081,9 +3065,6 @@ tbody tr:hover td { background: var(--row-hover); }
   flex-shrink: 0;
 }
 .cm-correct-btn.active { border-color: var(--green); background: var(--green); color: #fff; }
-.cm-md-preview p { margin: 0 0 0.5em; }
-.cm-md-preview ul { margin: 0 0 0.5em; padding-left: 1.5em; }
-.cm-md-preview li { margin-bottom: 2px; }
 
 /* Shared form grid */
 .form-grid {

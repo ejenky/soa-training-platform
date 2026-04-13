@@ -4,7 +4,6 @@ import Papa from 'papaparse'
 import {
   Plus, PencilSimple, Trash, MagnifyingGlass, X, Check,
   ArrowUp, ArrowDown, ListBullets, ArrowLeft, UploadSimple, DownloadSimple,
-  Eye, EyeSlash,
 } from '@phosphor-icons/react'
 import { useAuth } from '../contexts/AuthContext'
 import { pb } from '../lib/pb'
@@ -715,31 +714,6 @@ function parseVideoEmbed(url) {
 }
 
 // Simple markdown-to-html: bold, italic, bullets
-function renderMarkdown(text) {
-  if (!text) return ''
-  let html = text
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .replace(/_(.+?)_/g, '<em>$1</em>')
-  // Bullet lists
-  const lines = html.split('\n')
-  let inList = false
-  const out = []
-  for (const line of lines) {
-    const bullet = line.match(/^[-*]\s+(.+)/)
-    if (bullet) {
-      if (!inList) { out.push('<ul>'); inList = true }
-      out.push(`<li>${bullet[1]}</li>`)
-    } else {
-      if (inList) { out.push('</ul>'); inList = false }
-      out.push(line ? `<p>${line}</p>` : '')
-    }
-  }
-  if (inList) out.push('</ul>')
-  return out.join('\n')
-}
-
 function LessonForm({ initial, saving, onSave, onCancel, quizzes = [], onGoToQuizTab }) {
   const [f, setF] = useState({
     title: initial.title || '',
@@ -758,26 +732,9 @@ function LessonForm({ initial, saving, onSave, onCancel, quizzes = [], onGoToQui
   const hasUrl = !!f.content_url.trim()
   const defaultType = hasText && hasUrl ? 'both' : hasUrl ? 'video' : 'text'
   const [contentType, setContentType] = useState(defaultType)
-  const [showPreview, setShowPreview] = useState(false)
 
   const embedUrl = parseVideoEmbed(f.content_url)
   const linkedQuizzes = initial.id ? quizzes.filter((q) => q.lesson_id === initial.id) : []
-
-  function insertMarkdown(syntax) {
-    const ta = document.getElementById('lesson-content-editor')
-    if (!ta) return
-    const start = ta.selectionStart
-    const end = ta.selectionEnd
-    const text = f.content_text
-    const selected = text.substring(start, end)
-    let replacement
-    if (syntax === 'bold') replacement = `**${selected || 'text'}**`
-    else if (syntax === 'italic') replacement = `*${selected || 'text'}*`
-    else if (syntax === 'bullet') replacement = `\n- ${selected || 'item'}`
-    else return
-    const newText = text.substring(0, start) + replacement + text.substring(end)
-    setF({ ...f, content_text: newText })
-  }
 
   return (
     <form onSubmit={(e) => { e.preventDefault(); onSave(f) }}>
@@ -824,42 +781,17 @@ function LessonForm({ initial, saving, onSave, onCancel, quizzes = [], onGoToQui
         </div>
       )}
 
-      {/* Content Text with Markdown */}
+      {/* Content Text */}
       {(contentType === 'text' || contentType === 'both') && (
         <div className="field">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-            <label style={{ margin: 0 }}>Content Text</label>
-            <div style={{ display: 'flex', gap: 2 }}>
-              <button type="button" className="cm-md-btn" title="Bold" onClick={() => insertMarkdown('bold')}><span style={{ fontWeight: 700 }}>B</span></button>
-              <button type="button" className="cm-md-btn" title="Italic" onClick={() => insertMarkdown('italic')}><span style={{ fontStyle: 'italic' }}>I</span></button>
-              <button type="button" className="cm-md-btn" title="Bullet" onClick={() => insertMarkdown('bullet')}>•</button>
-              <button
-                type="button"
-                className="cm-icon-btn"
-                title={showPreview ? 'Edit' : 'Preview'}
-                onClick={() => setShowPreview((v) => !v)}
-                style={{ width: 26, height: 26, marginLeft: 4, color: showPreview ? 'var(--green)' : undefined }}
-              >
-                {showPreview ? <EyeSlash size={12} /> : <Eye size={12} />}
-              </button>
-            </div>
-          </div>
-          {showPreview ? (
-            <div
-              className="cm-md-preview"
-              style={{ minHeight: 100, padding: 10, border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-sm)', fontSize: 13, lineHeight: 1.6, background: 'var(--surface)' }}
-              dangerouslySetInnerHTML={{ __html: renderMarkdown(f.content_text) }}
-            />
-          ) : (
-            <textarea
-              id="lesson-content-editor"
-              rows={6}
-              value={f.content_text}
-              onChange={(e) => setF({ ...f, content_text: e.target.value })}
-              placeholder="Use **bold**, *italic*, and - bullets for formatting"
-              style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}
-            />
-          )}
+          <label>Content Text</label>
+          <textarea
+            rows={8}
+            value={f.content_text}
+            onChange={(e) => setF({ ...f, content_text: e.target.value })}
+            placeholder="Type your lesson content here..."
+            style={{ minHeight: 200 }}
+          />
         </div>
       )}
 
