@@ -498,10 +498,10 @@ export default function ContentManager() {
                   </div>
                   <div className="cm-row-actions">
                     {!o.audio_file && (
-                      <button className="cm-icon-btn" title="Generate Audio" onClick={() => handleSingleAudio(o)}><SpeakerHigh size={14} /></button>
+                      <button className="cm-icon-btn" title="Generate Audio" onClick={() => handleSingleAudio(o)}><SpeakerHigh size={16} /></button>
                     )}
-                    <button className="cm-icon-btn" title="Edit" onClick={() => setEditItem(o)}><PencilSimple size={14} /></button>
-                    <button className="cm-icon-btn danger" title="Delete" onClick={() => setDeleteTarget(o)}><Trash size={14} /></button>
+                    <button className="cm-icon-btn" title="Edit" onClick={() => setEditItem(o)}><PencilSimple size={16} /></button>
+                    <button className="cm-icon-btn danger" title="Delete" onClick={() => setDeleteTarget(o)}><Trash size={16} /></button>
                   </div>
                 </div>
               ))}

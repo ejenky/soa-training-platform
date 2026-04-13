@@ -3000,19 +3000,21 @@ tbody tr:hover td { background: var(--row-hover); }
   flex-shrink: 0;
 }
 .cm-icon-btn {
-  width: 30px;
-  height: 30px;
+  min-width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: transparent;
-  color: var(--text-muted);
+  color: var(--text-dim);
   cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
-.cm-icon-btn:hover { border-color: var(--text-muted); color: var(--text); }
-.cm-icon-btn.danger:hover { border-color: var(--error); color: var(--error); }
+.cm-icon-btn:hover { border-color: var(--text-muted); color: var(--text); background: var(--hover-bg); }
+.cm-icon-btn.danger { color: var(--text-dim); }
+.cm-icon-btn.danger:hover { border-color: var(--error); color: var(--error); background: rgba(239, 68, 68, 0.08); }
 .cm-content-toggle {
   display: flex;
   gap: 0;
