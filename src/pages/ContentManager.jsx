@@ -442,7 +442,7 @@ export default function ContentManager() {
                 <button className="sv-add-btn" style={{ background: 'var(--green)', color: '#fff', borderColor: 'var(--green)' }} onClick={() => setShowAudioModal(true)}>
                   <Waveform size={14} weight="bold" /> Generate All Audio
                 </button>
-                <button className="sv-add-btn" style={{ background: 'transparent', borderColor: 'var(--border-subtle)' }} onClick={() => setShowImport(true)}>
+                <button className="sv-add-btn" style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)' }} onClick={() => setShowImport(true)}>
                   <UploadSimple size={14} weight="bold" /> Import CSV
                 </button>
               </>
