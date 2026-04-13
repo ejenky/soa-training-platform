@@ -4,10 +4,12 @@ import Papa from 'papaparse'
 import {
   Plus, PencilSimple, Trash, MagnifyingGlass, X, Check,
   ArrowUp, ArrowDown, ListBullets, ArrowLeft, UploadSimple, DownloadSimple,
+  SpeakerHigh, SpeakerSlash, Waveform,
 } from '@phosphor-icons/react'
 import { useAuth } from '../contexts/AuthContext'
 import { pb } from '../lib/pb'
 import { CATEGORIES } from '../lib/gamification'
+import { generateObjectionAudio, bulkGenerateObjectionAudio } from '../lib/elevenlabs'
 
 const TABS = ['Lessons', 'Objections', 'Quiz Questions', 'Roleplays']
 const BLOOM_LEVELS = [
@@ -104,6 +106,12 @@ export default function ContentManager() {
   const [importing, setImporting] = useState(false)
   const [importProgress, setImportProgress] = useState({ current: 0, total: 0 })
   const [importResult, setImportResult] = useState(null)
+
+  // Audio generation
+  const [showAudioModal, setShowAudioModal] = useState(false)
+  const [audioGenerating, setAudioGenerating] = useState(false)
+  const [audioProgress, setAudioProgress] = useState({ current: 0, total: 0, currentText: '' })
+  const [audioResult, setAudioResult] = useState(null)
   const csvInputRef = useRef(null)
 
   useEffect(() => {
@@ -355,6 +363,39 @@ export default function ContentManager() {
     if (csvInputRef.current) csvInputRef.current.value = ''
   }
 
+  // Audio generation
+  const objsWithoutAudio = objections.filter((o) => o.active && !o.audio_file)
+
+  async function handleBulkAudio() {
+    setAudioGenerating(true)
+    setAudioResult(null)
+    const result = await bulkGenerateObjectionAudio((current, total, results) => {
+      const obj = objsWithoutAudio[current - 1]
+      setAudioProgress({ current, total, currentText: obj?.text?.slice(0, 60) || '' })
+    })
+    setAudioResult(result)
+    setAudioGenerating(false)
+    // Refresh objections to pick up audio_file
+    const fresh = await pb.collection('objections').getFullList({ sort: '-created' }).catch(() => [])
+    setObjections(fresh)
+  }
+
+  async function handleSingleAudio(objection) {
+    try {
+      const updated = await generateObjectionAudio(objection)
+      setObjections((prev) => prev.map((o) => o.id === objection.id ? updated : o))
+    } catch (e) {
+      console.error('Audio generation failed:', e)
+    }
+  }
+
+  function closeAudioModal() {
+    setShowAudioModal(false)
+    setAudioGenerating(false)
+    setAudioResult(null)
+    setAudioProgress({ current: 0, total: 0, currentText: '' })
+  }
+
   if (loading) return <div className="page"><div className="loader">Loading content…</div></div>
 
   return (
@@ -395,9 +436,14 @@ export default function ContentManager() {
         ) : (
           <div style={{ display: 'flex', gap: 8, marginLeft: 'auto' }}>
             {tab === 1 && (
-              <button className="sv-add-btn" style={{ background: 'transparent', borderColor: 'var(--border-subtle)' }} onClick={() => setShowImport(true)}>
-                <UploadSimple size={14} weight="bold" /> Import CSV
-              </button>
+              <>
+                <button className="sv-add-btn" style={{ background: 'var(--green)', color: '#fff', borderColor: 'var(--green)' }} onClick={() => setShowAudioModal(true)}>
+                  <Waveform size={14} weight="bold" /> Generate All Audio
+                </button>
+                <button className="sv-add-btn" style={{ background: 'transparent', borderColor: 'var(--border-subtle)' }} onClick={() => setShowImport(true)}>
+                  <UploadSimple size={14} weight="bold" /> Import CSV
+                </button>
+              </>
             )}
             <button className="sv-add-btn" onClick={() => setEditItem({})}>
               <Plus size={14} weight="bold" /> Add {tab === 3 ? 'Roleplay' : TABS[tab].replace(/s$/, '')}
@@ -436,7 +482,13 @@ export default function ContentManager() {
               {filteredObjections.map((o) => (
                 <div key={o.id} className="cm-row">
                   <div className="cm-row-main">
-                    <div className="cm-row-title">"{o.text?.slice(0, 80)}{o.text?.length > 80 ? '…' : ''}"</div>
+                    <div className="cm-row-title">
+                      {o.audio_file
+                        ? <SpeakerHigh size={14} weight="fill" className="audio-available" style={{ marginRight: 6, verticalAlign: -2 }} />
+                        : <SpeakerSlash size={14} weight="regular" className="audio-missing" style={{ marginRight: 6, verticalAlign: -2 }} />
+                      }
+                      "{o.text?.slice(0, 80)}{o.text?.length > 80 ? '…' : ''}"
+                    </div>
                     <div className="cm-row-meta">
                       <span className="badge">{o.category}</span>
                       <span className="badge">Diff {o.difficulty}</span>
@@ -445,6 +497,9 @@ export default function ContentManager() {
                     </div>
                   </div>
                   <div className="cm-row-actions">
+                    {!o.audio_file && (
+                      <button className="cm-icon-btn" title="Generate Audio" onClick={() => handleSingleAudio(o)}><SpeakerHigh size={14} /></button>
+                    )}
                     <button className="cm-icon-btn" title="Edit" onClick={() => setEditItem(o)}><PencilSimple size={14} /></button>
                     <button className="cm-icon-btn danger" title="Delete" onClick={() => setDeleteTarget(o)}><Trash size={14} /></button>
                   </div>
@@ -676,6 +731,53 @@ export default function ContentManager() {
                 )}
               </>
             )}
+          </div>
+        )}
+      </Modal>
+
+      {/* ── AUDIO GENERATION MODAL ── */}
+      <Modal title="Generate AI Audio" open={showAudioModal} onClose={closeAudioModal}>
+        {audioResult ? (
+          <div>
+            <div className={`badge ${audioResult.failed === 0 ? 'success' : 'warn'}`} style={{ fontSize: 14, padding: '8px 14px', marginBottom: 12 }}>
+              Generated {audioResult.success} audio file{audioResult.success !== 1 ? 's' : ''}.
+              {audioResult.failed > 0 && ` ${audioResult.failed} failed.`}
+            </div>
+            {audioResult.failures.length > 0 && (
+              <div style={{ fontSize: 12, color: 'var(--error)', marginBottom: 12 }}>
+                {audioResult.failures.map((f, i) => (
+                  <div key={i}>"{f.text}…" — {f.error}</div>
+                ))}
+              </div>
+            )}
+            <button className="primary" onClick={closeAudioModal} style={{ width: '100%' }}>Done</button>
+          </div>
+        ) : audioGenerating ? (
+          <div>
+            <div style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 8 }}>
+              Generating audio {audioProgress.current} of {audioProgress.total}...
+            </div>
+            <div style={{ width: '100%', height: 6, background: 'var(--border-subtle)', borderRadius: 3, overflow: 'hidden', marginBottom: 10 }}>
+              <div style={{ width: `${audioProgress.total > 0 ? (audioProgress.current / audioProgress.total) * 100 : 0}%`, height: '100%', background: 'var(--green)', borderRadius: 3, transition: 'width 0.3s ease' }} />
+            </div>
+            {audioProgress.currentText && (
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                "{audioProgress.currentText}…"
+              </div>
+            )}
+          </div>
+        ) : (
+          <div>
+            <p style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 16, lineHeight: 1.5 }}>
+              Generate AI voices for <strong>{objsWithoutAudio.length}</strong> objection{objsWithoutAudio.length !== 1 ? 's' : ''} without audio.
+              This uses your ElevenLabs quota.
+            </p>
+            <div className="modal-actions">
+              <button onClick={closeAudioModal}>Cancel</button>
+              <button className="primary" onClick={handleBulkAudio} disabled={objsWithoutAudio.length === 0}>
+                <Waveform size={14} /> Generate
+              </button>
+            </div>
           </div>
         )}
       </Modal>

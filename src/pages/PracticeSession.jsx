@@ -8,6 +8,7 @@ import {
   Check,
   X,
   CheckCircle,
+  SpeakerHigh,
   Pause,
   Play,
   SkipForward,
@@ -19,6 +20,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { pb } from '../lib/pb'
 import { gradeFreeText, gradeMultipleChoice } from '../lib/grading'
 import { updateReviewQueue, fetchDueReviews } from '../lib/spacedRepetition'
+import { getAudioUrl, playAudio } from '../lib/elevenlabs'
 
 /* ── Script blocks ─────────────────────────────────────────────── */
 const SCRIPT_BLOCKS = [
@@ -356,6 +358,7 @@ export default function PracticeSession() {
   const itemStartedAt = useRef(Date.now())
   const teleprompterRef = useRef(null)
   const activeWordRef = useRef(null)
+  const [audioPlaying, setAudioPlaying] = useState(false)
 
   /* ── Timer ─────────────────────────────────────────────────── */
   useEffect(() => {
@@ -533,6 +536,18 @@ export default function PracticeSession() {
       }
     }
   }, [highlightIdx])
+
+  /* ── Play objection audio ──────────────────────────────────── */
+  useEffect(() => {
+    if (phase !== 'objection' || !currentObj) return
+    const obj = currentObj.objection
+    // Skip fallback objections (no PB record) and those without audio
+    if (obj.id?.startsWith('fb') || !obj.audio_file) return
+    const url = getAudioUrl(obj)
+    if (!url) return
+    setAudioPlaying(true)
+    playAudio(url).finally(() => setAudioPlaying(false))
+  }, [phase, currentObjIdx])
 
   /* ── Submit response ───────────────────────────────────────── */
   const submitCurrent = useCallback(() => {
@@ -831,6 +846,7 @@ export default function PracticeSession() {
                     <span className="tp-quote-mark">"</span>
                     {currentObj.objection.text}
                     <span className="tp-quote-mark">"</span>
+                    {audioPlaying && <SpeakerHigh size={18} weight="fill" className="audio-playing" style={{ marginLeft: 8, verticalAlign: -3 }} />}
                   </div>
 
                   {/* Tags */}

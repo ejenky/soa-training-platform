@@ -8,6 +8,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { pb } from '../lib/pb'
 import { gradeFreeText, gradeMultipleChoice } from '../lib/grading'
 import { updateReviewQueue } from '../lib/spacedRepetition'
+import { getAudioUrl, playAudio } from '../lib/elevenlabs'
 
 /*
  * PocketBase collections required (create manually):
@@ -70,6 +71,7 @@ export default function ScenarioPlayer() {
   const startedAt = useRef(Date.now())
   const itemStartedAt = useRef(Date.now())
   const chatEndRef = useRef(null)
+  const [playingLineId, setPlayingLineId] = useState(null)
 
   // Timer
   useEffect(() => {
@@ -174,6 +176,17 @@ export default function ScenarioPlayer() {
 
   const advanceLineRef = useRef(advanceLine)
   advanceLineRef.current = advanceLine
+
+  // Play audio for client lines when they appear
+  useEffect(() => {
+    if (visibleLines.length === 0) return
+    const last = visibleLines[visibleLines.length - 1]
+    if (last.speaker !== 'client' || !last.audio_file) return
+    const url = getAudioUrl(last, 'scenario_lines')
+    if (!url) return
+    setPlayingLineId(last.id)
+    playAudio(url).finally(() => setPlayingLineId(null))
+  }, [visibleLines.length])
 
   // Start first line
   useEffect(() => {
@@ -386,9 +399,24 @@ export default function ScenarioPlayer() {
                 {isSystem && <div className="sp-bubble-label">SYSTEM</div>}
                 <div className="sp-bubble-text">{line.text}</div>
                 {isClient && (
-                  <button className="sp-audio-btn" disabled title="Audio coming soon">
-                    <Lock size={12} /> Audio coming soon
-                  </button>
+                  line.audio_file ? (
+                    <button
+                      className="sp-audio-btn active"
+                      onClick={() => {
+                        const url = getAudioUrl(line, 'scenario_lines')
+                        if (url) {
+                          setPlayingLineId(line.id)
+                          playAudio(url).finally(() => setPlayingLineId(null))
+                        }
+                      }}
+                    >
+                      <SpeakerHigh size={12} className={playingLineId === line.id ? 'audio-playing' : ''} /> {playingLineId === line.id ? 'Playing...' : 'Play Audio'}
+                    </button>
+                  ) : (
+                    <button className="sp-audio-btn" disabled title="No audio available">
+                      <Lock size={12} /> No audio
+                    </button>
+                  )
                 )}
               </motion.div>
             )
