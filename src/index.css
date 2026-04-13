@@ -213,6 +213,16 @@ p {
   flex-direction: column;
   z-index: 30;
 }
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 49;
+}
+@media (max-width: 768px) {
+  .sidebar-overlay { display: block; }
+}
 .sidebar-brand {
   padding: 22px 20px 18px;
   border-bottom: 1px solid var(--border-subtle);
@@ -2803,12 +2813,6 @@ tbody tr:hover td { background: var(--row-hover); }
     z-index: 50;
   }
   .sidebar.open { transform: translateX(0); }
-  .sidebar-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 49;
-  }
   .main { margin-left: 0; }
   .menu-toggle { display: inline-flex; }
   .topbar { padding: 12px 16px; }
