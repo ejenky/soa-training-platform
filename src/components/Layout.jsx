@@ -254,6 +254,8 @@ export default function Layout() {
         </div>
       </aside>
 
+      {open && <div className="sidebar-overlay" onClick={() => setOpen(false)} />}
+
       <div className="main">
         {!immersive && (
           <header className="topbar">
