@@ -52,11 +52,6 @@ export default function SupervisorSettings() {
 
   return (
     <div className="page settings-page">
-      <div className="page-header">
-        <h1>Settings</h1>
-        <p className="lede">Configure performance thresholds and certification requirements.</p>
-      </div>
-
       <div className="card" style={{ padding: '14px 18px', marginBottom: 18, background: 'var(--surface)', borderLeft: '3px solid var(--blue)' }}>
         <p style={{ fontSize: 13, color: 'var(--text-dim)', margin: 0 }}>These settings control how agents are evaluated and when performance flags are triggered.</p>
       </div>
