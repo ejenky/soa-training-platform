@@ -4,7 +4,7 @@ import Papa from 'papaparse'
 import {
   Plus, PencilSimple, Trash, MagnifyingGlass, X, Check,
   ArrowUp, ArrowDown, ListBullets, ArrowLeft, UploadSimple, DownloadSimple,
-  Eye, EyeSlash, TextB, TextItalic,
+  Eye, EyeSlash,
 } from '@phosphor-icons/react'
 import { useAuth } from '../contexts/AuthContext'
 import { pb } from '../lib/pb'
@@ -28,14 +28,13 @@ function Modal({ title, open, onClose, children }) {
   if (!open) return null
   return (
     <AnimatePresence>
-      <motion.div className="modal-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}>
+      <motion.div className="modal-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
         <motion.div
           className="modal-card modal-lg"
           initial={{ opacity: 0, y: 24, scale: 0.97 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 24, scale: 0.97 }}
           transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-          onClick={(e) => e.stopPropagation()}
         >
           <div className="modal-header">
             <h2>{title}</h2>
@@ -52,13 +51,12 @@ function ConfirmDialog({ open, message, onConfirm, onCancel, loading }) {
   if (!open) return null
   return (
     <AnimatePresence>
-      <motion.div className="modal-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onCancel}>
+      <motion.div className="modal-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={(e) => { if (e.target === e.currentTarget) onCancel() }}>
         <motion.div
           className="modal-card modal-sm"
           initial={{ opacity: 0, y: 24, scale: 0.97 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 24, scale: 0.97 }}
-          onClick={(e) => e.stopPropagation()}
         >
           <div className="modal-header"><h2>Confirm</h2><button className="modal-close" onClick={onCancel}><X size={16} /></button></div>
           <div className="modal-body">
@@ -799,17 +797,13 @@ function LessonForm({ initial, saving, onSave, onCancel, quizzes = [], onGoToQui
       {/* Content Type Selector */}
       <div className="field">
         <label>Content Type</label>
-        <div style={{ display: 'flex', gap: 0, border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-sm)', overflow: 'hidden', width: 'fit-content' }}>
+        <div className="cm-content-toggle">
           {[{ key: 'text', label: 'Text' }, { key: 'video', label: 'Video URL' }, { key: 'both', label: 'Both' }].map((t) => (
             <button
               key={t.key}
               type="button"
+              className={`cm-content-toggle-btn${contentType === t.key ? ' active' : ''}`}
               onClick={() => setContentType(t.key)}
-              style={{
-                padding: '6px 14px', fontSize: 12, fontWeight: 500, border: 'none', cursor: 'pointer',
-                background: contentType === t.key ? 'var(--green)' : 'transparent',
-                color: contentType === t.key ? '#fff' : 'var(--text-muted)',
-              }}
             >
               {t.label}
             </button>
@@ -836,9 +830,9 @@ function LessonForm({ initial, saving, onSave, onCancel, quizzes = [], onGoToQui
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
             <label style={{ margin: 0 }}>Content Text</label>
             <div style={{ display: 'flex', gap: 2 }}>
-              <button type="button" className="cm-icon-btn" title="Bold" onClick={() => insertMarkdown('bold')} style={{ width: 26, height: 26 }}><TextB size={12} /></button>
-              <button type="button" className="cm-icon-btn" title="Italic" onClick={() => insertMarkdown('italic')} style={{ width: 26, height: 26 }}><TextItalic size={12} /></button>
-              <button type="button" className="cm-icon-btn" title="Bullet" onClick={() => insertMarkdown('bullet')} style={{ width: 26, height: 26 }}><ListBullets size={12} /></button>
+              <button type="button" className="cm-md-btn" title="Bold" onClick={() => insertMarkdown('bold')}><span style={{ fontWeight: 700 }}>B</span></button>
+              <button type="button" className="cm-md-btn" title="Italic" onClick={() => insertMarkdown('italic')}><span style={{ fontStyle: 'italic' }}>I</span></button>
+              <button type="button" className="cm-md-btn" title="Bullet" onClick={() => insertMarkdown('bullet')}>•</button>
               <button
                 type="button"
                 className="cm-icon-btn"
