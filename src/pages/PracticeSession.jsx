@@ -220,33 +220,77 @@ const BASE_WPM = 160
 function objectionCountForLevel(level) {
   if (level === 1) return 1
   if (level === 2) return 2
-  if (level === 3) return 3 + Math.round(Math.random())  // 3-4
-  return 5 + Math.round(Math.random() * 2)               // 5-7
+  if (level === 3) return 3
+  return 4 + Math.round(Math.random())                   // 4-5
 }
 
-/* ── Pick random interrupt positions within the script ─────────── */
-function pickInterruptPositions(totalWords, count, level) {
-  const positions = []
-  if (count === 0) return positions
+/* ── Trigger zone classification ───────────────────────────────── */
+const ZONE_ORDER = ['pre_intro', 'early_intro', 'mid_soa', 'after_soa', 'card_request']
+const ZONE_RANGES = {
+  pre_intro: [0, 10],
+  early_intro: [10, 60],
+  mid_soa: [120, 200],
+  after_soa: [200, 250],
+  card_request: [250, Infinity],
+}
 
-  // For level 1: only in step 2 (roughly second half)
-  const minStart = level === 1 ? Math.floor(totalWords * 0.45) : Math.floor(totalWords * 0.1)
-  const maxEnd = Math.floor(totalWords * 0.9)
-  const range = maxEnd - minStart
+function classifyTriggerPoint(objection) {
+  const text = (objection?.text || '').toLowerCase()
+  const cat = objection?.category || ''
 
-  if (count === 1) {
-    positions.push(minStart + Math.floor(range * (0.3 + Math.random() * 0.4)))
-    return positions
+  // RWB card requests take priority by category or explicit keyword
+  if (cat === 'RWB Card' || /not giving you my card|red,?\s*white,?\s*and\s*blue|rwb\s*card/.test(text)) {
+    return 'card_request'
   }
-
-  // Spread evenly with some jitter
-  const spacing = range / (count + 1)
-  for (let i = 1; i <= count; i++) {
-    const base = minStart + Math.floor(spacing * i)
-    const jitter = Math.floor((Math.random() - 0.5) * spacing * 0.4)
-    positions.push(Math.max(minStart + 5, Math.min(maxEnd - 5, base + jitter)))
+  if (/who is this|what is this|what'?s going on|tell me what|calling about/.test(text)) {
+    return 'pre_intro'
   }
-  return positions.sort((a, b) => a - b)
+  if (/food card|grocery|groceries|scooter|allowance|social security|government benefit|i was just calling/.test(text)) {
+    return 'early_intro'
+  }
+  if (/not interested|don'?t need|i'?m good|no thanks|don'?t want insurance|don'?t want to sign up|medicare advantage/.test(text)) {
+    return 'mid_soa'
+  }
+  if (/scam|don'?t trust|waste your time|call me back|don'?t have time|goodbye|never mind/.test(text)) {
+    return 'after_soa'
+  }
+  // Sensible default — most objections interrupt early in the call
+  return 'early_intro'
+}
+
+/* ── Place interrupts inside each objection's trigger zone ─────── */
+function pickInterruptPositions(totalWords, objections) {
+  const positions = new Array(objections.length)
+  if (objections.length === 0 || totalWords <= 0) return positions
+
+  // Group objection indices by zone
+  const byZone = { pre_intro: [], early_intro: [], mid_soa: [], after_soa: [], card_request: [] }
+  objections.forEach((entry, i) => {
+    const obj = entry.objection || entry
+    const zone = classifyTriggerPoint(obj)
+    byZone[zone].push(i)
+  })
+
+  ZONE_ORDER.forEach((zone) => {
+    const indices = byZone[zone]
+    if (indices.length === 0) return
+    const [rawStart, rawEnd] = ZONE_RANGES[zone]
+    const start = Math.min(rawStart, Math.max(0, totalWords - 1))
+    const end = Math.min(rawEnd === Infinity ? totalWords - 1 : rawEnd, totalWords - 1)
+    const zoneWidth = Math.max(1, end - start)
+    const minGap = Math.max(3, Math.floor(zoneWidth / (indices.length + 1)))
+    let lastPos = start - minGap - 1
+    indices.forEach((originalIdx) => {
+      const minAllowed = Math.max(start, lastPos + minGap)
+      const maxAllowed = Math.max(minAllowed, end)
+      const pos = minAllowed + Math.floor(Math.random() * Math.max(1, maxAllowed - minAllowed + 1))
+      const clamped = Math.min(end, Math.max(start, pos))
+      positions[originalIdx] = clamped
+      lastPos = clamped
+    })
+  })
+
+  return positions
 }
 
 /* ── Tokenize script into words with metadata ──────────────────── */
@@ -458,7 +502,14 @@ export default function PracticeSession() {
 
       if (cancelled) return
 
-      const positions = pickInterruptPositions(tokens.length, built.length, difficulty)
+      // Sort objections by trigger-zone order so they flow naturally through the call
+      built.sort((a, b) => {
+        const za = ZONE_ORDER.indexOf(classifyTriggerPoint(a.objection))
+        const zb = ZONE_ORDER.indexOf(classifyTriggerPoint(b.objection))
+        return za - zb
+      })
+
+      const positions = pickInterruptPositions(tokens.length, built)
       setObjections(built)
       setInterruptPositions(positions)
 
