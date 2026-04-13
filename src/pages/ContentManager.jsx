@@ -281,7 +281,6 @@ export default function ContentManager() {
 
   // ── CSV Import ──
   const VALID_CATEGORIES = CATEGORIES.map((c) => c.key)
-  const VALID_STAGES = CALL_STAGES.map((s) => s.value)
 
   function handleCsvFile(e) {
     const file = e.target.files?.[0]
@@ -297,14 +296,13 @@ export default function ContentManager() {
             text: (row.text || '').trim(),
             category: (row.category || '').trim(),
             difficulty: parseInt(row.difficulty, 10) || 1,
-            call_stage: (row.call_stage || '').trim(),
+            call_stage: 'intro_soa',
             source: 'field',
           }
           const rowErrors = []
           if (!r.text) rowErrors.push('text is required')
           if (!VALID_CATEGORIES.includes(r.category)) rowErrors.push(`invalid category "${r.category}"`)
           if (r.difficulty < 1 || r.difficulty > 4) rowErrors.push('difficulty must be 1-4')
-          if (!VALID_STAGES.includes(r.call_stage)) rowErrors.push(`invalid call_stage "${r.call_stage}"`)
           rows.push({ ...r, _row: i + 2, _errors: rowErrors })
           if (rowErrors.length > 0) errors.push({ row: i + 2, errors: rowErrors })
         })
@@ -316,7 +314,7 @@ export default function ContentManager() {
   }
 
   function downloadCsvTemplate() {
-    const csv = `text,category,difficulty,call_stage\n"I was told I'd get a free food card just for calling",Intro/SOA,2,intro_soa\n"I don't need Medicare, I already have insurance",No Value,3,intro_soa`
+    const csv = `text,category,difficulty\n"I was told I'd get a free food card just for calling",Intro/SOA,2\n"I don't need Medicare, I already have insurance",No Value,3`
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
@@ -615,9 +613,9 @@ export default function ContentManager() {
         ) : (
           <div>
             <p style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 12, lineHeight: 1.5 }}>
-              CSV should have columns: <strong>text, category, difficulty, call_stage</strong>.<br />
+              CSV should have columns: <strong>text, category, difficulty</strong>.<br />
               Category must be one of: Intro/SOA, RWB Card, SEP, No Value.<br />
-              Difficulty: 1-4. Call stage: intro_soa, qualifying, presenting, closing.
+              Difficulty: 1-4.
             </p>
             <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
               <label className="sv-add-btn" style={{ cursor: 'pointer', background: 'transparent', borderColor: 'var(--border-subtle)' }}>
@@ -643,7 +641,6 @@ export default function ContentManager() {
                         <th>Text</th>
                         <th>Category</th>
                         <th>Diff</th>
-                        <th>Stage</th>
                         <th>Status</th>
                       </tr>
                     </thead>
@@ -654,7 +651,6 @@ export default function ContentManager() {
                           <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.text?.slice(0, 60)}</td>
                           <td>{r.category}</td>
                           <td>{r.difficulty}</td>
-                          <td>{r.call_stage}</td>
                           <td>{r._errors.length > 0
                             ? <span className="badge danger" title={r._errors.join(', ')} style={{ fontSize: 10 }}>Error</span>
                             : <span className="badge success" style={{ fontSize: 10 }}>OK</span>}
@@ -829,12 +825,11 @@ function ObjectionForm({ initial, saving, onSave, onCancel }) {
     text: initial.text || '',
     category: initial.category || CATEGORIES[0].key,
     difficulty: initial.difficulty || 1,
-    call_stage: initial.call_stage || 'intro_soa',
     active: initial.active ?? true,
     ...(initial.id ? { id: initial.id } : {}),
   })
   return (
-    <form onSubmit={(e) => { e.preventDefault(); onSave({ ...f, source: 'field' }) }}>
+    <form onSubmit={(e) => { e.preventDefault(); onSave({ ...f, source: 'field', call_stage: 'intro_soa' }) }}>
       <div className="field"><label>Objection Text</label><textarea rows={3} value={f.text} onChange={(e) => setF({ ...f, text: e.target.value })} required /></div>
       <div className="form-grid">
         <div className="field">
@@ -847,12 +842,6 @@ function ObjectionForm({ initial, saving, onSave, onCancel }) {
           <label>Difficulty</label>
           <select value={f.difficulty} onChange={(e) => setF({ ...f, difficulty: +e.target.value })}>
             {[1,2,3,4].map((d) => <option key={d} value={d}>{d}</option>)}
-          </select>
-        </div>
-        <div className="field">
-          <label>Call Stage</label>
-          <select value={f.call_stage} onChange={(e) => setF({ ...f, call_stage: e.target.value })}>
-            {CALL_STAGES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
           </select>
         </div>
       </div>
