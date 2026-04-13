@@ -61,7 +61,7 @@ function ConfirmDialog({ open, message, onConfirm, onCancel, loading }) {
         >
           <div className="modal-header"><h2>Confirm</h2><button className="modal-close" onClick={onCancel}><X size={16} /></button></div>
           <div className="modal-body">
-            <p style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 16 }}>{message}</p>
+            <p style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 16, whiteSpace: 'pre-line' }}>{message}</p>
             <div className="modal-actions">
               <button onClick={onCancel}>Cancel</button>
               <button className="outline-red" onClick={onConfirm} disabled={loading}>{loading ? 'Deleting…' : 'Delete'}</button>
@@ -87,6 +87,9 @@ export default function ContentManager() {
   const [saving, setSaving] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [deleting, setDeleting] = useState(false)
+  const [selectedObjIds, setSelectedObjIds] = useState(new Set())
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
+  const [bulkDeleting, setBulkDeleting] = useState(false)
 
   // Scenario line editor
   const [lineEditorId, setLineEditorId] = useState(null)
@@ -208,6 +211,43 @@ export default function ContentManager() {
       setDeleteTarget(null)
     } catch (e) { console.error(e) }
     finally { setDeleting(false) }
+  }
+
+  function toggleObjSelected(id) {
+    setSelectedObjIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id); else next.add(id)
+      return next
+    })
+  }
+
+  function toggleSelectAllObjs() {
+    const visibleIds = filteredObjections.map((o) => o.id)
+    const allSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedObjIds.has(id))
+    setSelectedObjIds((prev) => {
+      const next = new Set(prev)
+      if (allSelected) visibleIds.forEach((id) => next.delete(id))
+      else visibleIds.forEach((id) => next.add(id))
+      return next
+    })
+  }
+
+  async function handleBulkDelete() {
+    if (selectedObjIds.size === 0) return
+    setBulkDeleting(true)
+    const ids = Array.from(selectedObjIds)
+    const deleted = []
+    try {
+      for (const id of ids) {
+        try {
+          await pb.collection('objections').delete(id)
+          deleted.push(id)
+        } catch (e) { console.error('Failed to delete', id, e) }
+      }
+      setObjections((prev) => prev.filter((o) => !deleted.includes(o.id)))
+      setSelectedObjIds(new Set())
+      setBulkDeleteOpen(false)
+    } finally { setBulkDeleting(false) }
   }
 
   async function saveScenario(data) {
@@ -429,6 +469,15 @@ export default function ContentManager() {
           <div style={{ display: 'flex', gap: 8, marginLeft: 'auto' }}>
             {tab === 1 && (
               <>
+                {selectedObjIds.size > 0 && (
+                  <button
+                    className="sv-add-btn"
+                    style={{ background: 'var(--error)', color: '#fff', borderColor: 'var(--error)' }}
+                    onClick={() => setBulkDeleteOpen(true)}
+                  >
+                    <Trash size={14} weight="bold" /> Delete Selected ({selectedObjIds.size})
+                  </button>
+                )}
                 <button className="sv-add-btn" style={{ background: 'var(--green)', color: '#fff', borderColor: 'var(--green)' }} onClick={() => setShowAudioModal(true)}>
                   <Waveform size={14} weight="bold" /> Generate All Audio
                 </button>
@@ -471,8 +520,25 @@ export default function ContentManager() {
         <div className="card cm-list-card">
           {filteredObjections.length === 0 ? <div className="empty-state"><p>No objections match.</p></div> : (
             <div className="cm-list">
+              <div className="cm-row" style={{ background: 'var(--surface)', fontSize: 12, color: 'var(--text-dim)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1 }}>
+                  <input
+                    type="checkbox"
+                    checked={filteredObjections.length > 0 && filteredObjections.every((o) => selectedObjIds.has(o.id))}
+                    onChange={toggleSelectAllObjs}
+                    style={{ cursor: 'pointer', width: 16, height: 16 }}
+                  />
+                  <span>Select All ({filteredObjections.length} shown{selectedObjIds.size > 0 ? `, ${selectedObjIds.size} selected` : ''})</span>
+                </div>
+              </div>
               {filteredObjections.map((o) => (
                 <div key={o.id} className="cm-row">
+                  <input
+                    type="checkbox"
+                    checked={selectedObjIds.has(o.id)}
+                    onChange={() => toggleObjSelected(o.id)}
+                    style={{ cursor: 'pointer', width: 16, height: 16, marginRight: 10, alignSelf: 'center' }}
+                  />
                   <div className="cm-row-main">
                     <div className="cm-row-title">
                       {o.audio_file
@@ -815,10 +881,23 @@ export default function ContentManager() {
 
       <ConfirmDialog
         open={!!deleteTarget}
-        message={tab === 3 ? 'Delete this roleplay and all its lines? This cannot be undone.' : `Delete this ${TABS[tab].replace(/s$/, '').toLowerCase()}? This cannot be undone.`}
+        message={
+          tab === 3
+            ? 'Delete this roleplay and all its lines? This cannot be undone.'
+            : tab === 1 && deleteTarget?.text
+              ? `Delete this objection? This cannot be undone.\n\n"${deleteTarget.text}"`
+              : `Delete this ${TABS[tab].replace(/s$/, '').toLowerCase()}? This cannot be undone.`
+        }
         onConfirm={handleDelete}
         onCancel={() => setDeleteTarget(null)}
         loading={deleting}
+      />
+      <ConfirmDialog
+        open={bulkDeleteOpen}
+        message={`Delete ${selectedObjIds.size} selected objection${selectedObjIds.size !== 1 ? 's' : ''}? This cannot be undone.`}
+        onConfirm={handleBulkDelete}
+        onCancel={() => setBulkDeleteOpen(false)}
+        loading={bulkDeleting}
       />
     </div>
   )

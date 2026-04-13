@@ -69,8 +69,10 @@ export async function generateAudio(text, voiceId) {
   return await res.blob()
 }
 
-export async function generateObjectionAudio(objection) {
-  const voice = getVoiceByDifficulty(objection.difficulty || 2)
+export async function generateObjectionAudio(objection, voiceId) {
+  const voice = voiceId
+    ? (ALL_VOICES.find((v) => v.id === voiceId) || { id: voiceId, name: 'Custom' })
+    : getVoiceByDifficulty(objection.difficulty || 2)
   const blob = await generateAudio(objection.text, voice.id)
   const formData = new FormData()
   formData.append('audio_file', blob, `objection_${objection.id}_${voice.name}.mp3`)
@@ -78,13 +80,14 @@ export async function generateObjectionAudio(objection) {
   return updated
 }
 
-export async function bulkGenerateObjectionAudio(onProgress, includeExisting = false) {
+export async function bulkGenerateObjectionAudio(onProgress, includeExisting = false, defaultVoice = ALL_VOICES[0]) {
   const filter = includeExisting ? 'active = true' : 'active = true && audio_file = ""'
   const all = await pb.collection('objections').getFullList({ filter })
   const results = { success: 0, failed: 0, failures: [] }
+  const voiceId = defaultVoice?.id || ALL_VOICES[0].id
   for (let i = 0; i < all.length; i++) {
     try {
-      await generateObjectionAudio(all[i])
+      await generateObjectionAudio(all[i], voiceId)
       results.success++
     } catch (e) {
       results.failed++
