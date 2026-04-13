@@ -9,7 +9,7 @@ import {
 import { useAuth } from '../contexts/AuthContext'
 import { pb } from '../lib/pb'
 import { CATEGORIES } from '../lib/gamification'
-import { generateObjectionAudio, bulkGenerateObjectionAudio } from '../lib/elevenlabs'
+import { generateObjectionAudio, bulkGenerateObjectionAudio, getVoiceNameFromFilename } from '../lib/elevenlabs'
 
 const TABS = ['Lessons', 'Objections', 'Quiz Questions', 'Roleplays']
 const BLOOM_LEVELS = [
@@ -486,7 +486,7 @@ export default function ContentManager() {
                   <div className="cm-row-main">
                     <div className="cm-row-title">
                       {o.audio_file
-                        ? <SpeakerHigh size={14} weight="fill" className="audio-available" style={{ marginRight: 6, verticalAlign: -2 }} />
+                        ? <><SpeakerHigh size={14} weight="fill" className="audio-available" style={{ marginRight: 4, verticalAlign: -2 }} /><span style={{ fontSize: 10, color: 'var(--green)', marginRight: 6, fontWeight: 500 }}>{getVoiceNameFromFilename(o.audio_file)}</span></>
                         : <SpeakerSlash size={14} weight="regular" className="audio-missing" style={{ marginRight: 6, verticalAlign: -2 }} />
                       }
                       "{o.text?.slice(0, 80)}{o.text?.length > 80 ? '…' : ''}"
