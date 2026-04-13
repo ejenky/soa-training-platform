@@ -994,14 +994,15 @@ export default function PracticeSession() {
         </div>
         <div className="tp-bottom-actions">
           <button
-            className="tp-action-btn"
+            className="tp-action-btn-lg"
             onClick={() => setPaused((p) => !p)}
             title={paused ? 'Resume' : 'Pause'}
           >
-            {paused ? <Play size={16} weight="fill" /> : <Pause size={16} weight="fill" />}
+            {paused ? <Play size={20} weight="fill" /> : <Pause size={20} weight="fill" />}
+            <span className="tp-action-label">{paused ? 'Play' : 'Pause'}</span>
           </button>
           <button
-            className="tp-action-btn"
+            className="tp-action-btn-lg"
             onClick={() => {
               // Skip to next interrupt or end
               const nextInterrupt = interruptPositions.find((p) => p > highlightIdx)
@@ -1019,7 +1020,8 @@ export default function PracticeSession() {
             }}
             title="Skip"
           >
-            <SkipForward size={16} weight="fill" />
+            <SkipForward size={20} weight="fill" />
+            <span className="tp-action-label">Skip</span>
           </button>
         </div>
       </div>
