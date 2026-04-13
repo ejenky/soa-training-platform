@@ -249,7 +249,7 @@ export default function Landing() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 1.2 }}
         >
-          <MagneticButton href="/register">
+          <MagneticButton href="/login">
             Start Training <ArrowRight size={16} weight="bold" />
           </MagneticButton>
           <a href="#how" className="lp-link-secondary">See how it works</a>
@@ -324,7 +324,7 @@ export default function Landing() {
         <Reveal className="lp-cta-card">
           <h2>Ready to level up your team?</h2>
           <p>Give every agent the reps they need to handle any caller, any objection, every time.</p>
-          <MagneticButton href="/register">
+          <MagneticButton href="/login">
             Start Training <ArrowRight size={16} weight="bold" />
           </MagneticButton>
         </Reveal>

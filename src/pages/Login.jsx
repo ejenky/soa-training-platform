@@ -5,24 +5,34 @@ import { useAuth } from '../contexts/AuthContext'
 import AuthBackground from '../components/AuthBackground'
 
 export default function Login() {
-  const { login, isAuthenticated, loading } = useAuth()
+  const { login, isAuthenticated, user, loading } = useAuth()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
-  if (isAuthenticated) return <Navigate to="/dashboard" replace />
+  if (isAuthenticated) {
+    const dest = user?.role?.toLowerCase() === 'supervisor' ? '/supervisor' : '/dashboard'
+    return <Navigate to={dest} replace />
+  }
 
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
     setSubmitting(true)
     try {
-      await login(email, password)
-      navigate('/dashboard')
+      const result = await login(email, password)
+      const role = result?.record?.role?.toLowerCase()
+      navigate(role === 'supervisor' ? '/supervisor' : '/dashboard')
     } catch (err) {
-      setError(err?.message || 'Sign in failed. Check your credentials.')
+      const status = err?.status || err?.response?.status
+      const msg = err?.message?.toLowerCase() || ''
+      if (status >= 500 || msg.includes('network') || msg.includes('fetch')) {
+        setError('Unable to connect to server. Please try again later.')
+      } else {
+        setError('Incorrect email or password. Please try again.')
+      }
     } finally {
       setSubmitting(false)
     }
