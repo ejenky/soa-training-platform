@@ -3,10 +3,10 @@ import { pb } from './pb'
 export const ELEVENLABS_KEY = 'sk_9e00befdda5dd8362fee194e70d4046539fbb49b017fe483'
 
 export const VOICE_MAP = {
-  'Intro/SOA': { id: '5u41aNhyCU6hXOcjPPv0', name: 'Carol (Grandma)' },
-  'RWB Card': { id: 'YHcCpa6SBWnKDaCPZJQR', name: 'Mora (Skeptical)' },
-  'SEP': { id: 'GtvrBPZOsCHv7plFvX8i', name: 'Grandpa (Warm)' },
-  'No Value': { id: 's2wvuS7SwITYg8dqsJdn', name: 'Antonio (Grumpy)' },
+  'Intro/SOA': { id: '5u41aNhyCU6hXOcjPPv0', name: 'Carol' },
+  'RWB Card': { id: 'vFLqXa8bgbofGarf6fZh', name: 'Dorothy' },
+  'SEP': { id: '5u41aNhyCU6hXOcjPPv0', name: 'Carol' },
+  'No Value': { id: 'vFLqXa8bgbofGarf6fZh', name: 'Dorothy' },
 }
 
 export function getVoiceForCategory(category) {
@@ -29,8 +29,13 @@ export async function generateAudio(text, voiceId) {
     },
     body: JSON.stringify({
       text,
-      model_id: 'eleven_multilingual_v2',
-      voice_settings: { stability: 0.5, similarity_boost: 0.75 },
+      model_id: 'eleven_turbo_v2_5',
+      voice_settings: {
+        stability: 0.3,
+        similarity_boost: 0.5,
+        style: 0.7,
+        use_speaker_boost: true,
+      },
     }),
   })
   if (!res.ok) {
@@ -49,11 +54,9 @@ export async function generateObjectionAudio(objection) {
   return updated
 }
 
-export async function bulkGenerateObjectionAudio(onProgress) {
-  const all = await pb.collection('objections').getFullList({
-    filter: 'active = true && audio_file = ""',
-    sort: '-created',
-  })
+export async function bulkGenerateObjectionAudio(onProgress, includeExisting = false) {
+  const filter = includeExisting ? 'active = true' : 'active = true && audio_file = ""'
+  const all = await pb.collection('objections').getFullList({ filter })
   const results = { success: 0, failed: 0, failures: [] }
   for (let i = 0; i < all.length; i++) {
     try {

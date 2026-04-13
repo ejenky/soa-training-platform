@@ -120,8 +120,8 @@ export default function ContentManager() {
       try {
         const [ls, os, qs, scs] = await Promise.all([
           pb.collection('lessons').getFullList({ sort: 'week_number,order_index' }).catch(() => []),
-          pb.collection('objections').getFullList({ sort: '-created' }).catch(() => []),
-          pb.collection('quiz_questions').getFullList({ sort: '-created' }).catch(() => []),
+          pb.collection('objections').getFullList().catch(() => []),
+          pb.collection('quiz_questions').getFullList().catch(() => []),
           pb.collection('scenarios').getFullList({ sort: 'name' }).catch(() => []),
         ])
         // Fetch line counts per scenario
@@ -365,18 +365,19 @@ export default function ContentManager() {
 
   // Audio generation
   const objsWithoutAudio = objections.filter((o) => o.active && !o.audio_file)
+  const objsWithAudio = objections.filter((o) => o.active && o.audio_file)
+  const [regenExisting, setRegenExisting] = useState(false)
 
   async function handleBulkAudio() {
     setAudioGenerating(true)
     setAudioResult(null)
     const result = await bulkGenerateObjectionAudio((current, total, results) => {
-      const obj = objsWithoutAudio[current - 1]
-      setAudioProgress({ current, total, currentText: obj?.text?.slice(0, 60) || '' })
-    })
+      setAudioProgress({ current, total, currentText: '' })
+    }, regenExisting)
     setAudioResult(result)
     setAudioGenerating(false)
     // Refresh objections to pick up audio_file
-    const fresh = await pb.collection('objections').getFullList({ sort: '-created' }).catch(() => [])
+    const fresh = await pb.collection('objections').getFullList().catch(() => [])
     setObjections(fresh)
   }
 
@@ -394,6 +395,7 @@ export default function ContentManager() {
     setAudioGenerating(false)
     setAudioResult(null)
     setAudioProgress({ current: 0, total: 0, currentText: '' })
+    setRegenExisting(false)
   }
 
   if (loading) return <div className="page"><div className="loader">Loading content…</div></div>
@@ -768,14 +770,27 @@ export default function ContentManager() {
           </div>
         ) : (
           <div>
-            <p style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 16, lineHeight: 1.5 }}>
-              Generate AI voices for <strong>{objsWithoutAudio.length}</strong> objection{objsWithoutAudio.length !== 1 ? 's' : ''} without audio.
-              This uses your ElevenLabs quota.
+            <p style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 12, lineHeight: 1.5 }}>
+              {objsWithoutAudio.length > 0
+                ? <>Generate AI voices for <strong>{objsWithoutAudio.length}</strong> objection{objsWithoutAudio.length !== 1 ? 's' : ''} without audio.</>
+                : <>All active objections already have audio.</>
+              }
+              {' '}This uses your ElevenLabs quota.
             </p>
+            {objsWithAudio.length > 0 && (
+              <label className="cm-toggle-label" style={{ marginBottom: 16 }}>
+                <input type="checkbox" checked={regenExisting} onChange={(e) => setRegenExisting(e.target.checked)} />
+                Regenerate existing audio ({objsWithAudio.length} objection{objsWithAudio.length !== 1 ? 's' : ''})
+              </label>
+            )}
             <div className="modal-actions">
               <button onClick={closeAudioModal}>Cancel</button>
-              <button className="primary" onClick={handleBulkAudio} disabled={objsWithoutAudio.length === 0}>
-                <Waveform size={14} /> Generate
+              <button
+                className="primary"
+                onClick={handleBulkAudio}
+                disabled={regenExisting ? objections.filter((o) => o.active).length === 0 : objsWithoutAudio.length === 0}
+              >
+                <Waveform size={14} /> {regenExisting ? 'Regenerate All' : 'Generate'}
               </button>
             </div>
           </div>
